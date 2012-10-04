@@ -1,0 +1,67 @@
+# Copyright (c) 2012 CNRS
+# Author: Olivier Roussel
+#
+# This file is part of the MPD-dev package.
+# MPD-dev is free software: you can redistribute it
+# and/or modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation, either version
+# 3 of the License, or (at your option) any later version.
+#
+# MPD-dev is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+# of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Lesser Public License for more details.  You should have
+# received a copy of the GNU Lesser General Public License along with
+# MPD-dev.  If not, see
+# <http://www.gnu.org/licenses/>.
+
+# Requires at least CMake 2.6 to configure the package.
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+
+INCLUDE(cmake/base.cmake)
+INCLUDE(cmake/cpack.cmake)
+
+SET(CXX_DISABLE_WERROR ON) # blame OMPL 
+SET(PROJECT_NAME MPD-dev)
+SET(PROJECT_VERSION 0.1)
+SET(PROJECT_DESCRIPTION
+  "Motion planning for deformable objects.")
+SET(PROJECT_URL "")
+
+SET(CUSTOM_HEADER_DIR mpd)
+SET(${PROJECT_NAME}_HEADERS
+  #include/mpd/todo.h
+)
+
+SETUP_PROJECT()
+
+set(OMPL_PHYSICS_LIBS "")
+
+# Dependencies
+
+# Search for Boost.
+# Boost.Test is used by the test suite.
+#SET(Boost_USE_STATIC_LIBS OFF)
+#SET(Boost_USE_MULTITHREAD ON)
+#FIND_PACKAGE(Boost 1.40 COMPONENTS unit_test_framework REQUIRED)
+
+# Use OMPL
+find_package(OMPL REQUIRED)
+include_directories(${OMPL_INCLUDE_DIRS})
+set(OMPL_PHYSICS_LIBS ${OMPL_PHYSICS_LIBS} ${OMPL_LIBRARIES})
+
+# Use assimp for Collada files
+ADD_REQUIRED_DEPENDENCY("assimp >= 2.0")
+
+# Use SDL for the viewer / GUI
+ADD_REQUIRED_DEPENDENCY("sdl >= 1.2.15")
+
+# Use Bullet as one of the physical engine
+ADD_REQUIRED_DEPENDENCY("bullet >= 2.80")
+
+PKG_CONFIG_APPEND_LIBS(${PROJECT_NAME})
+
+ADD_SUBDIRECTORY(src)
+#ADD_SUBDIRECTORY(tests)
+
+SETUP_PROJECT_FINALIZE()
