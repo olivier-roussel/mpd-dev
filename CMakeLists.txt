@@ -28,27 +28,21 @@ SET(PROJECT_DESCRIPTION
   "Motion planning for deformable objects.")
 SET(PROJECT_URL "")
 
-SET(CUSTOM_HEADER_DIR mpd)
+SET(CUSTOM_HEADER_DIR mpd-dev)
 SET(${PROJECT_NAME}_HEADERS
-  #include/mpd/todo.h
 )
 
 SETUP_PROJECT()
 
 set(OMPL_PHYSICS_LIBS "")
 
+set(SHARE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/share")
+CONFIG_FILES("src/config.h")
+
 # Dependencies
 
-# Search for Boost.
-# Boost.Test is used by the test suite.
-#SET(Boost_USE_STATIC_LIBS OFF)
-#SET(Boost_USE_MULTITHREAD ON)
-#FIND_PACKAGE(Boost 1.40 COMPONENTS unit_test_framework REQUIRED)
-
-# Use OMPL
-find_package(OMPL REQUIRED)
-include_directories(${OMPL_INCLUDE_DIRS})
-set(OMPL_PHYSICS_LIBS ${OMPL_PHYSICS_LIBS} ${OMPL_LIBRARIES})
+# Use Eigen
+ADD_REQUIRED_DEPENDENCY("eigen3 >= 3.1.1")
 
 # Use assimp for Collada files
 ADD_REQUIRED_DEPENDENCY("assimp >= 2.0")
@@ -58,6 +52,9 @@ ADD_REQUIRED_DEPENDENCY("sdl >= 1.2.15")
 
 # Use Bullet as one of the physical engine
 ADD_REQUIRED_DEPENDENCY("bullet >= 2.80")
+
+# Use ompl motion planning lib
+ADD_REQUIRED_DEPENDENCY("ompl >= 0.11.1")
 
 PKG_CONFIG_APPEND_LIBS(${PROJECT_NAME})
 
