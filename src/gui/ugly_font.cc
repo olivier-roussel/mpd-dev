@@ -16,7 +16,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "gui/UglyFont.h"
+#include "gui/ugly_font.h"
 
 
 #ifdef WIN32

@@ -16,8 +16,8 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //
 
-#ifndef IMGUI_H
-#define IMGUI_H
+#ifndef MPD_DEV_GUI_IMGUI_H
+#define MPD_DEV_GUI_IMGUI_H
 
 #include <Eigen/Core>
 
@@ -117,7 +117,7 @@ void imguiSeparator();
 bool imguiButton(const char* text, bool enabled = true);
 bool imguiItem(const char* text, bool selected = false, bool enabled = true);
 bool imguiCheck(const char* text, bool checked, bool enabled = true);
-bool imguiCollapse(const char* text, bool checked, bool enabled = true);
+bool imguiCollapse(const char* text, bool checked/*, bool enabled = true*/);
 void imguiLabel(const char* text);
 void imguiLabelWithColor(const char* text, unsigned char r, unsigned char g, unsigned char b, unsigned char a = 255);
 void imguiLabelWithAlignedValue(const char* text, float value_, int size_);
@@ -166,6 +166,6 @@ const imguiGfxCmd* imguiGetRenderQueue();
 int imguiGetRenderQueueSize();
 
 
-#endif // IMGUI_H
+#endif // MPD_DEV_GUI_IMGUI_H
 
 // cmake:sourcegroup=Gui

@@ -36,8 +36,9 @@ SETUP_PROJECT()
 
 set(OMPL_PHYSICS_LIBS "")
 
-set(SHARE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/share")
+set(SHARE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/share/mpd-dev")
 CONFIG_FILES("src/config.h")
+include_directories("${CMAKE_BINARY_DIR}/src")
 
 # Dependencies
 

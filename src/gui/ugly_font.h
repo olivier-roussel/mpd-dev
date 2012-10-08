@@ -14,8 +14,8 @@
 // Soji Yamakawa
 
 
-#ifndef UGLYFONT_H
-#define UGLYFONT_H
+#ifndef MPD_DEV_GUI_UGLYFONT_H
+#define MPD_DEV_GUI_UGLYFONT_H
 /* { */
 
 
@@ -35,6 +35,6 @@ void YsDrawUglyFont(const char str[],int centering,int useDisplayList=1);
 
 
 /* } */
-#endif
+#endif // MPD_DEV_GUI_UGLYFONT_H
 
 // cmake:sourcegroup=Gui

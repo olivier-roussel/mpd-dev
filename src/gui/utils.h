@@ -17,8 +17,8 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#ifndef GUI_UTILS_H
-#define GUI_UTILS_H
+#ifndef MPD_DEV_GUI_UTILS_H
+#define MPD_DEV_GUI_UTILS_H
 
 #include <sstream>
 #include <string>
@@ -40,7 +40,7 @@ bool intersectRayAABB(const Eigen::Vector3f& ray_orig_, const Eigen::Vector3f& r
 //bool intersectRayTriangle(const Eigen::Vector3d& ray_origin, const Eigen::Vector3d& ray_dir, 
 //    const Eigen::Vector3d& a, const Eigen::Vector3d& b, const Eigen::Vector3d& c, double* t);
 
-#endif // GUI_UTILS_H
+#endif // MPD_DEV_GUI_UTILS_H
 
 // cmake:sourcegroup=Gui
 

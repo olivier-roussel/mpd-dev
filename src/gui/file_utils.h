@@ -17,8 +17,8 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#ifndef FILE_UTILS_H_
-#define FILE_UTILS_H_
+#ifndef MPD_DEV_GUI_FILE_UTILS_H_
+#define MPD_DEV_GUI_FILE_UTILS_H
 
 #ifdef WIN32
 #	include <io.h>
@@ -112,6 +112,6 @@ static void scanDirectory(const char* path, const std::vector<std::string>& exts
 
 }
 
-#endif // FILE_UTILS_H_
+#endif // MPD_DEV_GUI_FILE_UTILS_H_
 
 // cmake:sourcegroup=Gui

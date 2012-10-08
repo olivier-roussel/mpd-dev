@@ -17,20 +17,20 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#include "gui/Utils.h"
+#include "gui/utils.h"
 
 #include <float.h>
 
 bool intersectRayAABB(const Eigen::Vector3f& ray_orig_, const Eigen::Vector3f& ray_dir_,
   const Eigen::Vector3f& bmin_, const Eigen::Vector3f& bmax_, float& tmin_, Eigen::Vector3f& q_)
 {
-  static const float EPS = 1e-6;
+  static const float EPS = 1e-6f;
   tmin_ = 0.f;
   float tmax = FLT_MAX;
 
   for (int i = 0; i < 3 ; ++i)
   {
-    if (abs(ray_dir_[i]) < EPS)
+    if (fabs(ray_dir_[i]) < EPS)
     {
       // ray is parallel to slab: no hit if origin not within the slab
       if (ray_orig_[i] < bmin_[i] || ray_orig_[i] > bmax_[i])
@@ -65,9 +65,9 @@ Eigen::Vector4f int2Color(int i)
   int r = (i & 1) + ((i & (1 << 3)) >> 3) * 2 + 1;
   int g = ((i & (1 << 1)) >> 1) + ((i & (1 << 4)) >> 4) * 2 + 1;
   int b = ((i & (1 << 2)) >> 2) + ((i & (1 << 5)) >> 5) * 2 + 1;
-  col[0] = 1.f - r * 63.0/255.0;
-  col[1] = 1.f - g * 63.0/255.0;
-  col[2] = 1.f - b * 63.0/255.0;
+  col[0] = 1.f - static_cast<float>(r) * 63.0f/255.0f;
+  col[1] = 1.f - static_cast<float>(g) * 63.0f/255.0f;
+  col[2] = 1.f - static_cast<float>(b) * 63.0f/255.0f;
   col[3] = 1.f;
   return col;
 }

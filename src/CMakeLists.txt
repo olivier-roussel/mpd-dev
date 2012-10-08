@@ -16,15 +16,17 @@
 # <http://www.gnu.org/licenses/>.
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
+#include_directories(.)
 
 SET(EXECUTABLE_NAME ompl-physics-tester)
 
 ADD_EXECUTABLE(${EXECUTABLE_NAME}
   main.cc
   gui/imgui.cc
-  gui/imguiRenderGL.cc
-  gui/UglyFont.cc
-  gui/Utils.cc
+  gui/imgui_render_gl.cc
+  gui/ugly_font.cc
+  gui/utils.cc
+  gui/gl_viewer.cc
   )
 
 PKG_CONFIG_USE_DEPENDENCY(${EXECUTABLE_NAME} eigen3)

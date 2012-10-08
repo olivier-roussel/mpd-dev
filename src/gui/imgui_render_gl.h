@@ -16,13 +16,13 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //
 
-#ifndef IMGUI_RENDER_GL_H
-#define IMGUI_RENDER_GL_H
+#ifndef MPD_DEV_GUI_IMGUI_RENDER_GL_H
+#define MPD_DEV_GUI_IMGUI_RENDER_GL_H
 
 bool imguiRenderGLInit(const char* fontpath);
 void imguiRenderGLDestroy();
 void imguiRenderGLDraw();
 
-#endif // IMGUI_RENDER_GL_H
+#endif // MPD_DEV_GUI_IMGUI_RENDER_GL_H
 
 // cmake:sourcegroup=Gui
