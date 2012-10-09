@@ -17,26 +17,11 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#include <iostream>
-#include "gui/gl_viewer.h"
+#ifndef MPD_DEV_TYPES_H_
+#define MPD_DEV_TYPES_H_
 
-int main()
-{
-  GLViewer viewer("mpd-dev");
-  if (!viewer.init(1024, 768))
-  {
-    std::cout << "Could not initialize GL viewer." << std::endl;
-    return -1;
-  }
+#include <boost/tuple/tuple.hpp>
 
-  while (!viewer.is_done())
-  {
-    viewer.processEvents();
-    viewer.renderScene();
-    viewer.handleGUI();
-  }
+typedef boost::tuple<unsigned int, unsigned int, unsigned int> Triangle;
 
-  viewer.quit();
-
-  return 0;
-}
+#endif // MPD_DEV_TYPES_H_

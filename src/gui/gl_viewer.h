@@ -23,13 +23,15 @@
 #include <Eigen/Core>
 #include "SDL.h"
 #include "SDL_opengl.h"
+#include "mpd/environment.h"
+#include "mpd/algorithm.h"
 
 class GLViewer {
 public:
   GLViewer(const std::string& label);
   virtual ~GLViewer();
 
-  bool init();
+  bool init(int width, int height);
   void quit();
   void processEvents();
 
@@ -66,7 +68,10 @@ protected:
   float move_d_;                // Downwards moves
 
   int main_scroll_;             // Scroller for main menu
-  
+  bool is_show_algos_;          // true if algo selection menu visible
+  MotionPlanningAlgorithms algo_; // current algorithm for MP
+  bool is_show_envs_;
+  std::string env_name_;
 };
 
 #endif //  MPD_DEV_GUI_GL_VIEWER_H_

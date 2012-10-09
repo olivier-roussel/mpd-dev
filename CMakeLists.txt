@@ -28,15 +28,19 @@ SET(PROJECT_DESCRIPTION
   "Motion planning for deformable objects.")
 SET(PROJECT_URL "")
 
-SET(CUSTOM_HEADER_DIR mpd-dev)
+SET(CUSTOM_HEADER_DIR mpd)
 SET(${PROJECT_NAME}_HEADERS
+  include/${CUSTOM_HEADER_DIR}/types.h
+  include/${CUSTOM_HEADER_DIR}/environment.h
+  include/${CUSTOM_HEADER_DIR}/polygon_soup.h
+  include/${CUSTOM_HEADER_DIR}/algorithm.h
 )
 
 SETUP_PROJECT()
 
 set(OMPL_PHYSICS_LIBS "")
 
-set(SHARE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/share/mpd-dev")
+set(SHARE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/share/mpd")
 CONFIG_FILES("src/config.h")
 include_directories("${CMAKE_BINARY_DIR}/src")
 

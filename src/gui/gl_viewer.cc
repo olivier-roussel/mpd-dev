@@ -21,25 +21,27 @@
 #include "gui/imgui_render_gl.h"
 #include "gui/imgui.h"
 #include "gui/utils.h"
-
+#include "gui/render_helpers.h" // debug
 #include "src/config.h"
 
 #include <iostream>
 
 static const float kNearClip = 0.01f;
 static const float kFogColor[4] = { 0.32f, 0.25f, 0.25f, 1.f };
-static const float kBackColor[3] = {0.8f, 0.8f, 0.8f};
+static const float kBackColor[3] = {0.5f, 0.5f, 0.5f};
 static const float kKeybSpeed = 22.f;
 
 static const int kMainMenuWidth = 250;
 static const int kMainMenuHeight = 600;
+
+static const std::string kEnvDir = std::string(kShareDir) + "/ressources/environments/";
 
 GLViewer::GLViewer(const std::string& label):
   label_(label), origin_pos_(0, 0), origin_rot_(0.f, 0.f), is_done_(false), is_rotate_(false), 
   mouse_pos_(0, 0), rot_(45.f, 45.f), width_(-1), height_(-1),
   far_clip_(500.f), camera_pos_(0.f, 0.f, 0.f), last_time_(0), mouse_scroll_(0),
   move_f_(0.f), move_b_(0.f), move_l_(0.f), move_r_(0.f), move_u_(0.f), move_d_(0.f),
-  main_scroll_(0)
+  main_scroll_(0), is_show_algos_(false), algo_(MPA_KPIECE_OMPL)
 {
 }
 
@@ -58,7 +60,7 @@ bool GLViewer::is_done() const
   return is_done_;
 }
 
-bool GLViewer::init()
+bool GLViewer::init(int width, int height)
 {
    // Init SDL
    if (SDL_Init(SDL_INIT_EVERYTHING) != 0) 
@@ -75,10 +77,15 @@ bool GLViewer::init()
    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
  
-   const SDL_VideoInfo* vi = SDL_GetVideoInfo();
- 
-   width_ = vi->current_w - 20;
-   height_ = vi->current_h - 80;
+   if (height <= 0 || width <= 0)
+   {
+     const SDL_VideoInfo* vi = SDL_GetVideoInfo();
+     width_ = vi->current_w - 20;
+     height_ = vi->current_h - 80;
+   }else{
+    width_ = width;
+    height_ = height;
+   }
    SDL_Surface* screen = SDL_SetVideoMode(width_, height_, 0, SDL_OPENGL);
    if (!screen)
    {
@@ -100,8 +107,8 @@ bool GLViewer::init()
    glEnable(GL_CULL_FACE);
    glEnable(GL_FOG);
    glFogi(GL_FOG_MODE, GL_LINEAR);
-   glFogf(GL_FOG_START, 0);
-   glFogf(GL_FOG_END, 10);
+   glFogf(GL_FOG_START,20);
+   glFogf(GL_FOG_END, 100);
    glFogfv(GL_FOG_COLOR, kFogColor);
  
    glEnable(GL_POINT_SMOOTH);
@@ -160,7 +167,7 @@ void GLViewer::processEvents()
         const int dx = mouse_pos_.x() - origin_pos_.x();
         const int dy = mouse_pos_.y() - origin_pos_.y();
         rot_.x() = origin_rot_.x() - static_cast<float>(dy)*0.25f;
-        rot_.y() = origin_rot_.y() + static_cast<float>(dx)*0.25f;
+        rot_.y() = origin_rot_.y() - static_cast<float>(dx)*0.25f;
       }
       break;
     case SDL_QUIT:
@@ -170,7 +177,7 @@ void GLViewer::processEvents()
       break;
     } // end switch event type
   } // end while poll event
-   
+
 
 
 }
@@ -233,7 +240,7 @@ void GLViewer::renderScene()
 
   const float movex = (move_r_ - move_l_) * final_keyb_speed * dt;
   const float movey = (move_b_ - move_f_) * final_keyb_speed * dt;
-  const float movez = (move_u_ - move_f_) * final_keyb_speed * dt;
+  const float movez = (move_u_ - move_d_) * final_keyb_speed * dt;
   camera_pos_.x() += movex * static_cast<float>(model[0]);
   camera_pos_.y() += movex * static_cast<float>(model[4]);
   camera_pos_.z() += movex * static_cast<float>(model[8]);
@@ -245,7 +252,10 @@ void GLViewer::renderScene()
   camera_pos_.z() += movez * static_cast<float>(model[9]);
 
   // render scene
-  // todo !
+  // debug -> render a simple cylinder
+  const float radius = 2.f;
+  const float h = 5.f;
+  drawCylinder(-radius, -radius, 0.f, radius, radius, h, Eigen::Vector4f(1.f, 0.f, 0.f, 1.f));
 }
 
 void GLViewer::handleGUI()
@@ -266,17 +276,31 @@ void GLViewer::handleGUI()
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
   
-  imguiBeginFrame(mouse_pos_.x(), mouse_pos_.z(), mouse_buttons, mouse_scroll_);
+  //imguiBeginFrame(mouse_pos_.x(), mouse_pos_.y(), mouse_buttons, mouse_scroll_);
+  imguiBeginFrame(0, 0, mouse_buttons, mouse_scroll_);
 
   // process GUI elements
-
   // Main menu
   if (imguiBeginScrollArea("Main menu", width_ - kMainMenuWidth-10, height_ - kMainMenuHeight -10, kMainMenuWidth, kMainMenuHeight, &main_scroll_)) 
     is_mouse_over_gui_ = true;
-  
-  imguiLabel("Physical engine");
 
+  imguiLabel("Environment");
+  if (imguiButton(env_name_.c_str()))
+  {
+    is_show_envs_ = !is_show_envs_;
+//    if (is_show_envs_)
+//      scanDirectory(kEnvDir.c_str(), kEnvExtensions, env_files_);
+  }
+
+  imguiLabel("Physical engine");
+  imguiValue("Bullet");
+
+  imguiLabel("Algorithm");
+  if (imguiButton(getMotionPlanningAlgorithmName(algo_).c_str()))
+    is_show_algos_ = !is_show_algos_;
   imguiSeparator();
+
+  imguiEndScrollArea();
 
   // end of GUI main frame
   imguiEndFrame();
@@ -286,3 +310,5 @@ void GLViewer::handleGUI()
   // double buffering
   SDL_GL_SwapBuffers();
 }
+
+

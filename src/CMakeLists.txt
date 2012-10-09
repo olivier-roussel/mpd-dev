@@ -22,11 +22,14 @@ SET(EXECUTABLE_NAME ompl-physics-tester)
 
 ADD_EXECUTABLE(${EXECUTABLE_NAME}
   main.cc
+  polygon_soup.cc
+  algorithm.cc
   gui/imgui.cc
   gui/imgui_render_gl.cc
   gui/ugly_font.cc
   gui/utils.cc
   gui/gl_viewer.cc
+  gui/render_helpers.cc
   )
 
 PKG_CONFIG_USE_DEPENDENCY(${EXECUTABLE_NAME} eigen3)

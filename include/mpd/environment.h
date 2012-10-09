@@ -17,26 +17,18 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#include <iostream>
-#include "gui/gl_viewer.h"
+#ifndef MPD_DEV_ENVIRONMENT_H_
+#define MPD_DEV_ENVIRONMENT_H_
 
-int main()
-{
-  GLViewer viewer("mpd-dev");
-  if (!viewer.init(1024, 768))
-  {
-    std::cout << "Could not initialize GL viewer." << std::endl;
-    return -1;
-  }
+#include "mpd/polygon_soup.h"
 
-  while (!viewer.is_done())
-  {
-    viewer.processEvents();
-    viewer.renderScene();
-    viewer.handleGUI();
-  }
+class Environment {
+public:
+  Environment() {}
+  ~Environment() {}
 
-  viewer.quit();
+private:
+  PolygonSoup poly_soup_;
+};
 
-  return 0;
-}
+#endif // MPD_DEV_ENVIRONMENT_H_
