@@ -21,27 +21,25 @@
 #include "gui/imgui_render_gl.h"
 #include "gui/imgui.h"
 #include "gui/utils.h"
-#include "gui/render_helpers.h" // debug
 #include "src/config.h"
 
 #include <iostream>
+#include <boost/bind.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 static const float kNearClip = 0.01f;
 static const float kFogColor[4] = { 0.32f, 0.25f, 0.25f, 1.f };
 static const float kBackColor[3] = {0.5f, 0.5f, 0.5f};
 static const float kKeybSpeed = 22.f;
 
-static const int kMainMenuWidth = 250;
-static const int kMainMenuHeight = 600;
-
 static const std::string kEnvDir = std::string(kShareDir) + "/ressources/environments/";
 
-GLViewer::GLViewer(const std::string& label):
+GLViewer::GLViewer(const std::string& label, int width, int height, int fps_max):
   label_(label), origin_pos_(0, 0), origin_rot_(0.f, 0.f), is_done_(false), is_rotate_(false), 
-  mouse_pos_(0, 0), rot_(45.f, 45.f), width_(-1), height_(-1),
+  mouse_pos_(0, 0), rot_(45.f, 45.f), width_(width), height_(height), fps_max_(fps_max),
   far_clip_(500.f), camera_pos_(0.f, 0.f, 0.f), last_time_(0), mouse_scroll_(0),
   move_f_(0.f), move_b_(0.f), move_l_(0.f), move_r_(0.f), move_u_(0.f), move_d_(0.f),
-  main_scroll_(0), is_show_algos_(false), algo_(MPA_KPIECE_OMPL)
+  timer_(io_service_), io_service_()
 {
 }
 
@@ -49,7 +47,7 @@ GLViewer::~GLViewer()
 {
 }
 
-void GLViewer::quit()
+void GLViewer::_quit()
 {
   imguiRenderGLDestroy();
   SDL_Quit();
@@ -60,8 +58,67 @@ bool GLViewer::is_done() const
   return is_done_;
 }
 
-bool GLViewer::init(int width, int height)
+void GLViewer::run()
 {
+  thread_ = boost::thread(&GLViewer::_run, this);
+}
+
+void GLViewer::join()
+{
+  thread_.join();
+}
+
+int GLViewer::mouse_scroll() const
+{
+  return mouse_scroll_;
+}
+
+void GLViewer::set_is_mouse_over_gui(bool is_over)
+{
+  is_mouse_over_gui_ = is_over;
+}
+
+int GLViewer::width() const
+{
+  return width_;
+}
+
+int GLViewer::height() const
+{
+  return height_;
+}
+
+void GLViewer::_run()
+{
+  if (_init())
+  {
+    const int refresh_time = fps_max_ <= 0 ? 0 : 1000 / fps_max_;
+    timer_.expires_from_now(boost::posix_time::milliseconds(refresh_time));
+    timer_.async_wait(boost::bind(&GLViewer::_update, this));
+    io_service_.run();
+  }else
+    std::cout << "Could not initialize the GL viewer." << std::endl;
+}
+
+void GLViewer::_update()
+{
+  _processEvents();
+  _renderScene();
+  _handleGUI();
+
+  // schedule next update excepted if is_done() condition reached
+  if (!is_done())
+  {
+    const int refresh_time = fps_max_ <= 0 ? 0 : 1000 / fps_max_;
+    timer_.expires_at(timer_.expires_at() + boost::posix_time::milliseconds(refresh_time));
+    timer_.async_wait(boost::bind(&GLViewer::_update, this));
+  }else
+    _quit();
+}
+
+bool GLViewer::_init()
+{
+
    // Init SDL
    if (SDL_Init(SDL_INIT_EVERYTHING) != 0) 
    {
@@ -77,14 +134,11 @@ bool GLViewer::init(int width, int height)
    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
  
-   if (height <= 0 || width <= 0)
+   if (height_ <= 0 || width_ <= 0)
    {
      const SDL_VideoInfo* vi = SDL_GetVideoInfo();
      width_ = vi->current_w - 20;
      height_ = vi->current_h - 80;
-   }else{
-    width_ = width;
-    height_ = height;
    }
    SDL_Surface* screen = SDL_SetVideoMode(width_, height_, 0, SDL_OPENGL);
    if (!screen)
@@ -119,7 +173,7 @@ bool GLViewer::init(int width, int height)
    return true;
 }
 
-void GLViewer::processEvents()
+void GLViewer::_processEvents()
 {
   SDL_Event event;
   mouse_scroll_ = 0;
@@ -176,13 +230,12 @@ void GLViewer::processEvents()
     default:
       break;
     } // end switch event type
+    processEvent(event); // user defined behavior
   } // end while poll event
-
-
 
 }
 
-void GLViewer::renderScene()
+void GLViewer::_renderScene()
 {
   // update times
   Uint32 time = SDL_GetTicks();
@@ -252,22 +305,14 @@ void GLViewer::renderScene()
   camera_pos_.z() += movez * static_cast<float>(model[9]);
 
   // render scene
-  // debug -> render a simple cylinder
-  const float radius = 2.f;
-  const float h = 5.f;
-  drawCylinder(-radius, -radius, 0.f, radius, radius, h, Eigen::Vector4f(1.f, 0.f, 0.f, 1.f));
+  renderScene();
 }
 
-void GLViewer::handleGUI()
+void GLViewer::_handleGUI()
 {
   // handle & render GUI
   is_mouse_over_gui_ = false;
   
-  unsigned char mouse_buttons = 0;
-  if (SDL_GetMouseState(0,0) & SDL_BUTTON_LMASK)
-    mouse_buttons |= IMGUI_MBUT_LEFT;
-  if (SDL_GetMouseState(0,0) & SDL_BUTTON_RMASK)
-    mouse_buttons |= IMGUI_MBUT_RIGHT;
 
   glDisable(GL_DEPTH_TEST);
   glMatrixMode(GL_PROJECTION);
@@ -276,39 +321,9 @@ void GLViewer::handleGUI()
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
   
-  //imguiBeginFrame(mouse_pos_.x(), mouse_pos_.y(), mouse_buttons, mouse_scroll_);
-  imguiBeginFrame(0, 0, mouse_buttons, mouse_scroll_);
-
-  // process GUI elements
-  // Main menu
-  if (imguiBeginScrollArea("Main menu", width_ - kMainMenuWidth-10, height_ - kMainMenuHeight -10, kMainMenuWidth, kMainMenuHeight, &main_scroll_)) 
-    is_mouse_over_gui_ = true;
-
-  imguiLabel("Environment");
-  if (imguiButton(env_name_.c_str()))
-  {
-    is_show_envs_ = !is_show_envs_;
-//    if (is_show_envs_)
-//      scanDirectory(kEnvDir.c_str(), kEnvExtensions, env_files_);
-  }
-
-  imguiLabel("Physical engine");
-  imguiValue("Bullet");
-
-  imguiLabel("Algorithm");
-  if (imguiButton(getMotionPlanningAlgorithmName(algo_).c_str()))
-    is_show_algos_ = !is_show_algos_;
-  imguiSeparator();
-
-  imguiEndScrollArea();
-
-  // end of GUI main frame
-  imguiEndFrame();
-  imguiRenderGLDraw();
+  handleGUI();
 
   glEnable(GL_DEPTH_TEST);
   // double buffering
   SDL_GL_SwapBuffers();
 }
-
-

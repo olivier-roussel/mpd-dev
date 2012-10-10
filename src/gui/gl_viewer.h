@@ -23,25 +23,63 @@
 #include <Eigen/Core>
 #include "SDL.h"
 #include "SDL_opengl.h"
-#include "mpd/environment.h"
-#include "mpd/algorithm.h"
+#include <boost/thread.hpp>
+#include <boost/asio.hpp>
+
 
 class GLViewer {
 public:
-  GLViewer(const std::string& label);
+  GLViewer(const std::string& label, int width, int height, int fps_max);
   virtual ~GLViewer();
 
-  bool init(int width, int height);
-  void quit();
-  void processEvents();
+  void run();
 
-  void renderScene();           // GL rendering of the scene
-  void handleGUI();             // GUI rendering
+  void join();
 
-  bool is_done() const;
+  int height() const;
+
+  int width() const;
+
+private:
+  /**
+   * Here are methods that must be redefined to customize 
+   * the behavior of the viewer.
+   * */
+
+  /**
+   * \fn
+   * \brief Process to given event which has been caught.
+   */
+  virtual void processEvent(const SDL_Event& event) {}
+
+  /**
+   * \fn
+   * \brief Called for each scene rendering.
+   * Add your gl calls here.
+   */ 
+  virtual void renderScene() {}
+
+  /**
+   * \fn
+   * \brief Called for each GUI rendering & handling.
+   * Define your GUI over the scene here (see imgui* functions).
+   */ 
+  virtual void handleGUI() {}
+
 
 protected:
+  bool is_done() const;
+
+  int mouse_scroll() const;
+
+  void set_is_mouse_over_gui(bool is_over);
+
+private:
   std::string label_;           // Viewer label
+  boost::thread thread_;        // Viewer thread
+  boost::asio::io_service io_service_;
+  boost::asio::deadline_timer timer_;
+
   Eigen::Vector2i origin_pos_;  // Origin position 
   Eigen::Vector2f origin_rot_;  // Origin rotation 
   bool is_done_;
@@ -51,10 +89,10 @@ protected:
   Eigen::Vector2f rot_;
   int width_;                   // Window width
   int height_;                  // Window height
+  int fps_max_;                 // Maximum expected FPS
   float far_clip_;              // Camera far clipping distance. Depends on the scene.
   Eigen::Vector3f camera_pos_;  // Camera position
   Uint32 last_time_;            // Previous rendering time
- // Uint32 time_;
   int mouse_scroll_;            // mouse scroll
 
   Eigen::Vector3f ray_start_;   // Ray start
@@ -67,11 +105,24 @@ protected:
   float move_u_;                // Upward moves
   float move_d_;                // Downwards moves
 
-  int main_scroll_;             // Scroller for main menu
-  bool is_show_algos_;          // true if algo selection menu visible
-  MotionPlanningAlgorithms algo_; // current algorithm for MP
-  bool is_show_envs_;
-  std::string env_name_;
+
+private:
+  void _run();
+
+  void _update();
+  /**
+   * \fn
+   * \brief Initialize the core viewer components.
+   */ 
+  bool _init();
+
+  void _processEvents();
+
+  void _renderScene();           // GL rendering of the scene
+
+  void _handleGUI();             // GUI rendering
+
+  void _quit();
 };
 
 #endif //  MPD_DEV_GUI_GL_VIEWER_H_

@@ -17,15 +17,28 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#include <iostream>
-#include "gui/mpd_viewer.h"
+#ifndef MPD_DEV_GUI_MPD_VIEWER_H_
+#define MPD_DEV_GUI_MPD_VIEWER_H_
 
-int main()
-{
-  MPDViewer viewer("mpd-dev", 1024, 768, 40);
-  viewer.run();
+#include "gui/gl_viewer.h"
+#include "mpd/algorithm.h"
 
-  viewer.join();
+class MPDViewer : public GLViewer {
 
-  return 0;
-}
+public:
+  MPDViewer(const std::string& label, int width, int height, int fps_max);
+  virtual ~MPDViewer();
+
+private:
+  void renderScene();
+
+  void handleGUI();
+
+
+  int main_scroll_;             // Scroller for main menu
+  bool is_show_algos_;          // true if algo selection menu visible
+  MotionPlanningAlgorithms algo_; // current algorithm for MP
+  bool is_show_envs_;
+  std::string env_name_;
+};
+#endif // MPD_DEV_GUI_MPD_VIEWER_H_

@@ -30,6 +30,7 @@ ADD_EXECUTABLE(${EXECUTABLE_NAME}
   gui/utils.cc
   gui/gl_viewer.cc
   gui/render_helpers.cc
+  gui/mpd_viewer.cc
   )
 
 PKG_CONFIG_USE_DEPENDENCY(${EXECUTABLE_NAME} eigen3)
