@@ -17,35 +17,29 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#ifndef MPD_DEV_GUI_MPD_VIEWER_H_
-#define MPD_DEV_GUI_MPD_VIEWER_H_
+#ifndef MPD_DEV_MPD_CONTROLLER_H_
+#define MPD_DEV_MPD_CONTROLLER_H_
 
-#include "gui/gl_viewer.h"
-#include "mpd/algorithm.h"
-#include "mpd/mpd_controller.h"
-
+#include "mpd/environment.h"
 #include <boost/filesystem/path.hpp>
 
-class MPDViewer : public GLViewer {
-
+class MPDController {
 public:
-  MPDViewer(const std::string& label, int width, int height, int fps_max, MPDController& mpd_controller);
-  virtual ~MPDViewer();
+  MPDController();
+  virtual ~MPDController();
+
+  const Environment& environment() const;
+
+  bool loadEnvironment(const boost::filesystem::path& path);
+
+  void switchEnvironmentAxis();
+
+  void invertEnvironmentTriangles();
+  
+  bool isEnvironmentSet() const;
 
 private:
-  void renderScene();
-
-  void handleGUI();
-
-
-  int main_scroll_;             // Scroller for main menu
-  bool is_show_algos_;          // true if algo selection menu visible
-  MotionPlanningAlgorithms algo_; // current algorithm for MP
-  bool is_show_envs_;
-  int env_scroll_;
-  std::string env_name_;
-  std::vector<boost::filesystem::path> env_files_;  // env models files
-
-  MPDController& mpd_controller_;  // controller
+  Environment* env_;
 };
-#endif // MPD_DEV_GUI_MPD_VIEWER_H_
+
+#endif // MPD_DEV_MPD_CONTROLLER_H_

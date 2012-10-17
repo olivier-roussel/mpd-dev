@@ -17,17 +17,29 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#ifndef MPD_DEV_TYPES_H_
-#define MPD_DEV_TYPES_H_
+#ifndef MPD_DEV_CONSTANTS_H_
+#define MPD_DEV_CONSTANTS_H_
 
-#include <boost/tuple/tuple.hpp>
 #include <Eigen/Core>
 
-typedef boost::tuple<unsigned int, unsigned int, unsigned int> Triangle;
+/**
+ * Transformation matrix from Z up axis to Y up axis (both direct & right handed)
+ *         |  1  0  0 |
+ * Z_2_Y = |  0  0  1 |
+ *         |  0 -1  0 |
+ */
+static const double Z_2_Y_data[] = {1, 0, 0, 0, 0, -1, 0, 1, 0};
+ 
+static const Eigen::Matrix3d Z_2_Y_Matrix(Z_2_Y_data); 
 
-struct AABB {
-  Eigen::Vector3d bmin;
-  Eigen::Vector3d bmax;
-};
+/**
+ * Transformation matrix from Y up axis to Z up axis (both direct & right handed)
+ *         |  1  0  0 |
+ * Y_2_Z = |  0  0 -1 |
+ *         |  0  1  0 |
+ */ 
+static const double Y_2_Z_data[] = {1, 0, 0, 0, 0, 1, 0, -1, 0};
+ 
+static const Eigen::Matrix3d Y_2_Z_Matrix(Y_2_Z_data); 
 
-#endif // MPD_DEV_TYPES_H_
+#endif // MPD_DEV_CONSTANTS_H_

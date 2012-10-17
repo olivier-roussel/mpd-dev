@@ -22,7 +22,10 @@
 
 int main()
 {
-  MPDViewer viewer("mpd-dev", 1024, 768, 40);
+  MPDController controller;
+
+  MPDViewer viewer("mpd-dev", 1024, 768, 40, controller);
+
   viewer.run();
 
   viewer.join();

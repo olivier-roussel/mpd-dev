@@ -17,17 +17,24 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#ifndef MPD_DEV_TYPES_H_
-#define MPD_DEV_TYPES_H_
+#include "gui/polygon_soup_renderer.h"
 
-#include <boost/tuple/tuple.hpp>
-#include <Eigen/Core>
+#include "SDL.h"
+#include "SDL_opengl.h"
 
-typedef boost::tuple<unsigned int, unsigned int, unsigned int> Triangle;
-
-struct AABB {
-  Eigen::Vector3d bmin;
-  Eigen::Vector3d bmax;
-};
-
-#endif // MPD_DEV_TYPES_H_
+void renderPolygonSoup(const PolygonSoup& soup)
+{
+  glBegin(GL_TRIANGLES);
+  for (size_t i = 0 ; i < soup.tris().size() ; ++i)
+  {
+    const Triangle& t = soup.tris()[i];
+    double lum = 0.85;
+    if (soup.tris().size() == soup.normals().size())
+      lum = (2. + 1.3*soup.normals()[i].x() + 0.5*soup.normals()[i].y() + 0.8*soup.normals()[i].z()) / 4.;
+    glColor3d(lum, lum, lum);
+    glVertex3dv(soup.verts()[t.get<0>()].data());
+    glVertex3dv(soup.verts()[t.get<1>()].data());
+    glVertex3dv(soup.verts()[t.get<2>()].data());
+  }
+  glEnd();
+}

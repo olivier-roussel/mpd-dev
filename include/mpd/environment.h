@@ -21,14 +21,25 @@
 #define MPD_DEV_ENVIRONMENT_H_
 
 #include "mpd/polygon_soup.h"
+#include "mpd/types.h"
 
 class Environment {
 public:
-  Environment() {}
-  ~Environment() {}
+  Environment();
+  virtual ~Environment();
+
+  const AABB& getAABB() const;
+
+  bool loadPolygonSoup(const boost::filesystem::path& path);
+
+  const PolygonSoup& polygon_soup() const;
+
+  void switchPolygonSoupAxis();
+
+  void invertPolygonSoupTriangles();
 
 private:
-  PolygonSoup poly_soup_;
+  PolygonSoup polygon_soup_;
 };
 
 #endif // MPD_DEV_ENVIRONMENT_H_

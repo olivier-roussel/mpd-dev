@@ -17,17 +17,37 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#ifndef MPD_DEV_TYPES_H_
-#define MPD_DEV_TYPES_H_
+#include "mpd/environment.h"
 
-#include <boost/tuple/tuple.hpp>
-#include <Eigen/Core>
+Environment::Environment()
+{
+}
 
-typedef boost::tuple<unsigned int, unsigned int, unsigned int> Triangle;
+Environment::~Environment()
+{
+}
 
-struct AABB {
-  Eigen::Vector3d bmin;
-  Eigen::Vector3d bmax;
-};
+const AABB& Environment::getAABB() const
+{
+  return polygon_soup_.aabb();
+}
 
-#endif // MPD_DEV_TYPES_H_
+bool Environment::loadPolygonSoup(const boost::filesystem::path& path)
+{
+  return polygon_soup_.loadFromFile(path);
+}
+
+const PolygonSoup& Environment::polygon_soup() const
+{
+  return polygon_soup_;
+}
+
+void Environment::switchPolygonSoupAxis()
+{
+  polygon_soup_.switchYZAxis();
+}
+
+void Environment::invertPolygonSoupTriangles()
+{
+  polygon_soup_.invertTriangles();
+}

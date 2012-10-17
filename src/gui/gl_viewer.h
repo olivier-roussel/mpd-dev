@@ -69,10 +69,29 @@ private:
 
 protected:
   bool is_done() const;
-
+  bool is_mouse_over_gui() const;
   int mouse_scroll() const;
+  const Eigen::Vector2f& rot() const;
+  float far_clip() const;
+  const Eigen::Vector3f& camera_pos() const;
+  const Eigen::Vector2i& mouse_pos() const;
 
-  void set_is_mouse_over_gui(bool is_over);
+  void set_is_done(bool is_done);
+  void set_is_mouse_over_gui(bool is_mouse_over_gui);
+  void set_mouse_scroll(int mouse_scroll);
+  void set_rot(const Eigen::Vector2f& rot);
+  void set_far_clip(float far_clip);
+  void set_camera_pos(const Eigen::Vector3f& camera_pos);
+  void set_mouse_pos(const Eigen::Vector2i& mouse_pos);
+
+private:
+  bool is_done_;                // True if viewer must quit
+  bool is_mouse_over_gui_;      // True if mouse is over the GUI
+  int mouse_scroll_;            // mouse scroll
+  Eigen::Vector2f rot_;
+  float far_clip_;              // Camera far clipping distance. Depends on the scene.
+  Eigen::Vector3f camera_pos_;  // Camera position
+  Eigen::Vector2i mouse_pos_;   // Mouse coords on screen
 
 private:
   std::string label_;           // Viewer label
@@ -82,18 +101,11 @@ private:
 
   Eigen::Vector2i origin_pos_;  // Origin position 
   Eigen::Vector2f origin_rot_;  // Origin rotation 
-  bool is_done_;
   bool is_rotate_;
-  bool is_mouse_over_gui_;      // True if mouse is over the GUI
-  Eigen::Vector2i mouse_pos_;   // Mouse coords on screen
-  Eigen::Vector2f rot_;
   int width_;                   // Window width
   int height_;                  // Window height
   int fps_max_;                 // Maximum expected FPS
-  float far_clip_;              // Camera far clipping distance. Depends on the scene.
-  Eigen::Vector3f camera_pos_;  // Camera position
   Uint32 last_time_;            // Previous rendering time
-  int mouse_scroll_;            // mouse scroll
 
   Eigen::Vector3f ray_start_;   // Ray start
   Eigen::Vector3f ray_end_;     // Ray end

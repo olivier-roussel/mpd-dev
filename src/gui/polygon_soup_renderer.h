@@ -17,17 +17,11 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#ifndef MPD_DEV_TYPES_H_
-#define MPD_DEV_TYPES_H_
+#ifndef MPD_DEV_GUI_POLYGON_SOUP_RENDERER_H_
+#define MPD_DEV_GUI_POLYGON_SOUP_RENDERER_H_
 
-#include <boost/tuple/tuple.hpp>
-#include <Eigen/Core>
+#include "mpd/polygon_soup.h"
 
-typedef boost::tuple<unsigned int, unsigned int, unsigned int> Triangle;
+void renderPolygonSoup(const PolygonSoup& soup);
 
-struct AABB {
-  Eigen::Vector3d bmin;
-  Eigen::Vector3d bmax;
-};
-
-#endif // MPD_DEV_TYPES_H_
+#endif // MPD_DEV_GUI_POLYGON_SOUP_RENDERER_H_

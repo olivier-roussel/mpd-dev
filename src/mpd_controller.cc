@@ -17,17 +17,49 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#ifndef MPD_DEV_TYPES_H_
-#define MPD_DEV_TYPES_H_
+#include "mpd/mpd_controller.h"
 
-#include <boost/tuple/tuple.hpp>
-#include <Eigen/Core>
+MPDController::MPDController()
+  :env_(NULL)
+{
+}
 
-typedef boost::tuple<unsigned int, unsigned int, unsigned int> Triangle;
+MPDController::~MPDController()
+{
+  if (env_)
+  {
+    delete env_;
+    env_ = NULL;
+  }
+}
 
-struct AABB {
-  Eigen::Vector3d bmin;
-  Eigen::Vector3d bmax;
-};
+const Environment& MPDController::environment() const
+{
+  assert(env_ != NULL && "environment is uninitialized.");
 
-#endif // MPD_DEV_TYPES_H_
+  return *env_;
+}
+
+bool MPDController::loadEnvironment(const boost::filesystem::path& path)
+{
+  if (!env_)
+    env_ = new Environment();
+  return env_->loadPolygonSoup(path);
+}
+
+void MPDController::switchEnvironmentAxis()
+{
+  if (env_)
+    env_->switchPolygonSoupAxis();
+}
+
+void MPDController::invertEnvironmentTriangles()
+{
+  if (env_)
+    env_->invertPolygonSoupTriangles();
+}
+
+bool MPDController::isEnvironmentSet() const
+{
+  return env_ != NULL;
+}

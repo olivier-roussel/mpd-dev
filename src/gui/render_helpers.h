@@ -24,4 +24,6 @@
 
 void drawCylinder(float minx, float miny, float minz, float maxx, float maxy, float maxz, const Eigen::Vector4f& color_);
 
+void renderReferential(const Eigen::Vector3d& pos, float len_factor, float width_factor);
+
 #endif // MPD_DEV_GUI_RENDER_HERLPERS_H_

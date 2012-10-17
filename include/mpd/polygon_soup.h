@@ -29,6 +29,17 @@
 class PolygonSoup {
 public:
   
+  enum SupportedFileFormats_t {
+    SFF_OBJ = 0,
+    /*SFF_DAE,*/
+    SFF_NB_SUPPORTED_FORMATS
+  };
+
+  enum UpAxis_t {
+    UA_Y_UP,
+    UA_Z_UP
+  };
+
   PolygonSoup();
   ~PolygonSoup();
 
@@ -41,24 +52,30 @@ public:
 
   bool isEmpty() const;
 
-  bool load(const std::string& filename);
+  bool loadFromFile(const boost::filesystem::path& path);
 
+  const AABB& aabb() const;
+
+  void clear();
+
+  void invertTriangles();
+
+  void switchYZAxis();
   
 private:
   std::vector<Eigen::Vector3d> verts_;      // Vertices array
   std::vector<Triangle> tris_;            // Triangles array
   std::vector<Eigen::Vector3d> normals_;    // Triangles normals
-  Eigen::Vector3d bmin_, bmax_;             // Poly soup AABB (automatically updated)
+  AABB aabb_;             // Poly soup AABB (automatically updated)
+  UpAxis_t up_axis_;
 
   bool loadFromObj(const boost::filesystem::path& filename);
+
   void computeAABB();
+
   void computeTriangleNormals();
 
 //  static const char * const kSupportedFileFormats;
-  enum SupportedFileFormats {
-    SFF_OBJ/*
-    SFF_DAE*/
-  };
 };
 
 

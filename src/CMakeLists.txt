@@ -24,6 +24,8 @@ ADD_EXECUTABLE(${EXECUTABLE_NAME}
   main.cc
   polygon_soup.cc
   algorithm.cc
+  environment.cc
+  mpd_controller.cc
   gui/imgui.cc
   gui/imgui_render_gl.cc
   gui/ugly_font.cc
@@ -31,6 +33,8 @@ ADD_EXECUTABLE(${EXECUTABLE_NAME}
   gui/gl_viewer.cc
   gui/render_helpers.cc
   gui/mpd_viewer.cc
+  gui/file_utils.cc
+  gui/polygon_soup_renderer.cc
   )
 
 PKG_CONFIG_USE_DEPENDENCY(${EXECUTABLE_NAME} eigen3)

@@ -18,13 +18,16 @@
 **/
 
 #include "mpd/polygon_soup.h"
+#include "mpd/constants.h"
 
 #include <Eigen/Geometry>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <fstream>
 #include <iostream>
+#include <sstream>
 
 PolygonSoup::PolygonSoup()
 {}
@@ -53,24 +56,27 @@ bool PolygonSoup::isEmpty() const
   return verts_.empty();
 }
 
-bool PolygonSoup::load(const std::string& filename)
+const AABB& PolygonSoup::aabb() const
 {
-  boost::filesystem::path path(filename);
+  return aabb_;
+}
+
+bool PolygonSoup::loadFromFile(const boost::filesystem::path& path)
+{
+  bool res = false;
+  clear();
   if (boost::filesystem::exists(path) && boost::filesystem::is_regular_file(path))
   {
     std::string ext(path.extension().string());
     boost::to_upper(ext);
-    //m_name = path.stem().string();
-    if (ext == "OBJ")
-      return loadFromObj(path);
+    if (ext == ".OBJ")
+      res = loadFromObj(path);
 //    else if (ext == "DAE")
 //      loadFromCollada(filename, std::string(filename + ".trims"), std::string(fileName + ".nodes"));
-    else
-      return false;
     computeAABB();
     computeTriangleNormals();
-  }else
-    return false;
+  }
+  return res;
 }
 
 bool PolygonSoup::loadFromObj(const boost::filesystem::path& filename)
@@ -79,24 +85,104 @@ bool PolygonSoup::loadFromObj(const boost::filesystem::path& filename)
   file.open(filename.string().c_str(), std::ifstream::in | std::ifstream::binary);
   while (file.good())
   {
+    // parse row by row
     std::string line;
     getline(file, line);
-    std::cout << line << std::endl; // debug
+    if (line.size() < 2 || line[0] == '#')
+      continue;
+    // vertex coords
+    if (line[0] == 'v' && line[1] != 'n' && line[1] != 't')
+    {
+      std::stringstream ss(line.substr(1));
+      double x,y,z;
+      ss >> x >> y >> z;
+      verts_.push_back(Eigen::Vector3d(x, y, z));
+    }else if(line[0] == 'f')
+    {
+      // face
+      // extract substring for each vertex of this face
+      std::vector<unsigned int> vert_indexes;
+      std::vector<std::string> tokens;
+      std::istringstream iss(line.substr(1));
+      std::copy(std::istream_iterator<std::string>(iss), std::istream_iterator<std::string>(),
+          std::back_inserter<std::vector<std::string> >(tokens));
+      for (size_t i = 0 ; i < tokens.size() ; ++i)
+      {
+        std::replace(tokens[i].begin(), tokens[i].end(), '/', ' ');
+        std::vector<std::string> vert_fields;
+        std::istringstream iss_vert(tokens[i]);
+        std::copy(std::istream_iterator<std::string>(iss_vert), std::istream_iterator<std::string>(),
+          std::back_inserter<std::vector<std::string> >(vert_fields));
+        if (vert_fields.empty())
+          return false; // wrong file format
+        const unsigned int vert_index = boost::lexical_cast<unsigned int>(vert_fields[0]) - 1; // !! indexes start at 1 in obj files
+        vert_indexes.push_back(vert_index);
+      }
+      for (size_t i = 2 ; i < vert_indexes.size() ; ++i)
+        tris_.push_back(boost::make_tuple(vert_indexes[0], vert_indexes[i-1], vert_indexes[i]));
+    }
   }
   file.close();
+  return true;
 }
 
+void PolygonSoup::invertTriangles()
+{
+  for (size_t i = 0  ; i < tris_.size() ; ++i)
+    std::swap(tris_[i].get<1>(), tris_[i].get<2>());
+}
+
+void PolygonSoup::clear()
+{
+  verts_.clear();
+  tris_.clear();
+  normals_.clear();
+  aabb_.bmin = Eigen::Vector3d::Zero();
+  aabb_.bmax = Eigen::Vector3d::Zero();
+}
+
+void PolygonSoup::switchYZAxis()
+{
+  if (up_axis_ == UA_Y_UP)
+  {
+    // goto Z vertical
+    for (size_t i = 0 ; i < verts_.size() ; ++i)
+      verts_[i] = Y_2_Z_Matrix * verts_[i];
+
+    for (int i = 0 ; i < normals_.size() ; ++i)
+      normals_[i] = Y_2_Z_Matrix * normals_[i];
+
+    computeAABB();
+    up_axis_ = UA_Z_UP;
+  }
+  else if (up_axis_ == UA_Z_UP) 
+  {
+    // goto Y vertical
+    for (size_t i = 0 ; i < verts_.size() ; ++i)
+      verts_[i] = Z_2_Y_Matrix * verts_[i];
+
+    for (int i = 0 ; i < normals_.size() ; ++i)
+      normals_[i] = Z_2_Y_Matrix * normals_[i];
+
+    computeAABB();
+    up_axis_ = UA_Y_UP;
+  }
+}
+  
 void PolygonSoup::computeAABB()
 {
   if (!isEmpty())
   {
-    bmin_ = verts_[0];
-    bmax_ = verts_[0];
+    aabb_.bmin = verts_[0];
+    aabb_.bmax = verts_[0];
     for (size_t i = 1 ; i < verts_.size() ; ++i)
     {
-      bmin_ = bmin_.cwiseMin(verts_[i]);
-      bmax_ = bmax_.cwiseMax(verts_[i]);
+      aabb_.bmin = aabb_.bmin.cwiseMin(verts_[i]);
+      aabb_.bmax = aabb_.bmax.cwiseMax(verts_[i]);
     }
+  }else{
+    aabb_.bmin = Eigen::Vector3d::Zero();
+    aabb_.bmax = Eigen::Vector3d::Zero();
   }
 }
 

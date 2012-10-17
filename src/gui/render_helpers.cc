@@ -66,3 +66,22 @@ void drawCylinder(float minx, float miny, float minz, float maxx, float maxy, fl
 
 }
 
+void renderReferential(const Eigen::Vector3d& pos, float len_factor, float width_factor)
+{
+  glLineWidth(width_factor);
+  glPushMatrix();
+    glTranslatef(pos[0], pos[1], pos[2]);
+    glScalef(len_factor, len_factor, len_factor);
+    glBegin(GL_LINES);
+    glColor3ub(255, 0, 0); //x axis
+    glVertex3f(0.f, 0.f, 0.f);
+    glVertex3f(1.f, 0.f, 0.f);
+    glColor3ub(0, 255, 0); //y axis
+    glVertex3f(0.f, 0.f, 0.f);
+    glVertex3f(0.f, 1.f, 0.f);
+    glColor3ub(0, 0, 255); //z axis
+    glVertex3f(0.f, 0.f, 0.f);
+    glVertex3f(0.f, 0.f, 1.f);
+    glEnd();
+  glPopMatrix();
+}

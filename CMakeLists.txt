@@ -34,6 +34,8 @@ SET(${PROJECT_NAME}_HEADERS
   include/${CUSTOM_HEADER_DIR}/environment.h
   include/${CUSTOM_HEADER_DIR}/polygon_soup.h
   include/${CUSTOM_HEADER_DIR}/algorithm.h
+  include/${CUSTOM_HEADER_DIR}/mpd_controller.h
+  include/${CUSTOM_HEADER_DIR}/constants.h
 )
 
 SETUP_PROJECT()

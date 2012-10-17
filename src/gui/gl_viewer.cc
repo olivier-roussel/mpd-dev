@@ -32,7 +32,6 @@ static const float kFogColor[4] = { 0.32f, 0.25f, 0.25f, 1.f };
 static const float kBackColor[3] = {0.5f, 0.5f, 0.5f};
 static const float kKeybSpeed = 22.f;
 
-static const std::string kEnvDir = std::string(kShareDir) + "/ressources/environments/";
 
 GLViewer::GLViewer(const std::string& label, int width, int height, int fps_max):
   label_(label), origin_pos_(0, 0), origin_rot_(0.f, 0.f), is_done_(false), is_rotate_(false), 
@@ -47,15 +46,80 @@ GLViewer::~GLViewer()
 {
 }
 
+bool GLViewer::is_done() const
+{
+  return is_done_;
+}
+
+bool GLViewer::is_mouse_over_gui() const
+{
+  return is_mouse_over_gui_;
+}
+
+int GLViewer::mouse_scroll() const
+{
+  return mouse_scroll_;
+}
+
+const Eigen::Vector2f& GLViewer::rot() const
+{
+  return rot_;
+}
+
+float GLViewer::far_clip() const
+{
+  return far_clip_;
+}
+
+const Eigen::Vector3f& GLViewer::camera_pos() const
+{
+  return camera_pos_;
+}
+
+const Eigen::Vector2i& GLViewer::mouse_pos() const
+{
+  return mouse_pos_;
+}
+
+void GLViewer::set_is_done(bool is_done)
+{
+  is_done_ = is_done;
+}
+
+void GLViewer::set_is_mouse_over_gui(bool is_mouse_over_gui)
+{
+  is_mouse_over_gui_ = is_mouse_over_gui;
+}
+
+void GLViewer::set_mouse_scroll(int mouse_scroll)
+{
+  mouse_scroll_ = mouse_scroll;
+}
+
+void GLViewer::set_rot(const Eigen::Vector2f& rot)
+{
+  rot_ = rot;
+}
+ 
+void GLViewer::set_far_clip(float far_clip)
+{
+  far_clip_ = far_clip;
+}
+
+void GLViewer::set_camera_pos(const Eigen::Vector3f& camera_pos)
+{
+  camera_pos_ = camera_pos;
+}
+
+void GLViewer::set_mouse_pos(const Eigen::Vector2i& mouse_pos)
+{
+  mouse_pos_ = mouse_pos;
+}
+
 void GLViewer::_quit()
 {
   imguiRenderGLDestroy();
   SDL_Quit();
-}
-
-bool GLViewer::is_done() const
-{
-  return is_done_;
 }
 
 void GLViewer::run()
@@ -66,16 +130,6 @@ void GLViewer::run()
 void GLViewer::join()
 {
   thread_.join();
-}
-
-int GLViewer::mouse_scroll() const
-{
-  return mouse_scroll_;
-}
-
-void GLViewer::set_is_mouse_over_gui(bool is_over)
-{
-  is_mouse_over_gui_ = is_over;
 }
 
 int GLViewer::width() const
@@ -221,7 +275,7 @@ void GLViewer::_processEvents()
         const int dx = mouse_pos_.x() - origin_pos_.x();
         const int dy = mouse_pos_.y() - origin_pos_.y();
         rot_.x() = origin_rot_.x() - static_cast<float>(dy)*0.25f;
-        rot_.y() = origin_rot_.y() - static_cast<float>(dx)*0.25f;
+        rot_.y() = origin_rot_.y() + static_cast<float>(dx)*0.25f;
       }
       break;
     case SDL_QUIT:
