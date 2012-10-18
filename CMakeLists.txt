@@ -19,6 +19,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 INCLUDE(cmake/base.cmake)
+INCLUDE(cmake/boost.cmake)
 INCLUDE(cmake/cpack.cmake)
 
 SET(CXX_DISABLE_WERROR ON) # blame OMPL 
@@ -47,6 +48,9 @@ CONFIG_FILES("src/config.h")
 include_directories("${CMAKE_BINARY_DIR}/src")
 
 # Dependencies
+
+# Use Boost
+SEARCH_FOR_BOOST()
 
 # Use Eigen
 ADD_REQUIRED_DEPENDENCY("eigen3 >= 3.1.1")
