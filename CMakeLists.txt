@@ -37,6 +37,9 @@ SET(${PROJECT_NAME}_HEADERS
   include/${CUSTOM_HEADER_DIR}/algorithm.h
   include/${CUSTOM_HEADER_DIR}/mpd_controller.h
   include/${CUSTOM_HEADER_DIR}/constants.h
+  include/${CUSTOM_HEADER_DIR}/physics_engine.h
+  include/${CUSTOM_HEADER_DIR}/bullet_physics_wrapper.h
+  include/${CUSTOM_HEADER_DIR}/bullet_utils.h
 )
 
 SETUP_PROJECT()
@@ -51,6 +54,7 @@ include_directories("${CMAKE_BINARY_DIR}/src")
 
 # Use Boost
 SEARCH_FOR_BOOST()
+# TODO Fix this instead hard coding boost include dir in src/cMakeLists
 
 # Use Eigen
 ADD_REQUIRED_DEPENDENCY("eigen3 >= 3.1.1")
@@ -65,7 +69,7 @@ ADD_REQUIRED_DEPENDENCY("sdl >= 1.2.15")
 ADD_REQUIRED_DEPENDENCY("bullet >= 2.80")
 
 # Use ompl motion planning lib
-ADD_REQUIRED_DEPENDENCY("ompl >= 0.11.1")
+#ADD_REQUIRED_DEPENDENCY("ompl >= 0.11.1")
 
 PKG_CONFIG_APPEND_LIBS(${PROJECT_NAME})
 
