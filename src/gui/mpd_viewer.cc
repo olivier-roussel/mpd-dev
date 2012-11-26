@@ -31,7 +31,7 @@ static const int kMainMenuHeight = 600;
 
 static const int kFileSelectorHeight = 300;
 static const int kFileSelectorWidth = 250;
-static const std::string kEnvDir = std::string(kShareDir) + "/ressources/environments/";
+static const std::string kEnvDir = std::string(kShareDir) + "/resources/environments/";
 
 MPDViewer::MPDViewer(const std::string& label, int width, int height, int fps_max, MPDController& mpd_controller):
   GLViewer(label, width, height, fps_max),

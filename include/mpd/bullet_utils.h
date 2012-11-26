@@ -21,7 +21,10 @@
 #define MPD_DEV_BULLET_UTILS_H_
 
 #include <Eigen/Core>
-#include "btVector3.h"
+#include <Eigen/Geometry>
+#include "LinearMath/btVector3.h"
+#include "LinearMath/btQuaternion.h"
+#include "LinearMath/btTransform.h"
 #include <vector>
 
 /**
@@ -40,13 +43,23 @@ struct BulletBaseArray {
   }
 };
 
+namespace e2bt
+{
 /**
  * Data type conversion helpers.
  */
 
-btVector3 eig_v3_to_bt_v3(const Eigen::Vector3d& v);
+btVector3 toBtVector3(const Eigen::Vector3d& v);
 
-void eig_v3_to_bt_v3_array(const std::vector<Eigen::Vector3d>& in, btVector3& out);
+void toBtVector3Array(const std::vector<Eigen::Vector3d>& in, btVector3* out);
+
+btQuaternion toBtQuaternion(const Eigen::Quaterniond& q);
+
+Eigen::Quaterniond toEQuaternion(const btQuaternion& q);
+
+btTransform toBtTransform(const Eigen::Affine3d& t);
+
+} // namespace e2bt
 
 #endif // MPD_DEV_BULLET_UTILS_H_
 

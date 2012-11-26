@@ -25,11 +25,15 @@ message("Boost_LIBRARIES=${Boost_LIBRARIES}")
 SET(EXECUTABLE_NAME ompl-physics-tester)
 
 ADD_EXECUTABLE(${EXECUTABLE_NAME}
-  main.cc
-  polygon_soup.cc
   algorithm.cc
+  bullet_engine_wrapper.cc
+  bullet_utils.cc
   environment.cc
+  main.cc
   mpd_controller.cc
+  #  physics_manager.cc
+  physics_thread.cc
+  polygon_soup.cc
   gui/imgui.cc
   gui/imgui_render_gl.cc
   gui/ugly_font.cc

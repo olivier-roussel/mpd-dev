@@ -29,7 +29,8 @@
 #include <iostream>
 #include <sstream>
 
-PolygonSoup::PolygonSoup()
+PolygonSoup::PolygonSoup() :
+  verts_(), tris_(), normals_(), aabb_(), up_axis_(UA_Y_UP)
 {}
 
 PolygonSoup::~PolygonSoup()
@@ -73,9 +74,12 @@ bool PolygonSoup::loadFromFile(const boost::filesystem::path& path)
       res = loadFromObj(path);
 //    else if (ext == "DAE")
 //      loadFromCollada(filename, std::string(filename + ".trims"), std::string(fileName + ".nodes"));
-    computeAABB();
-    computeTriangleNormals();
   }
+
+  // MPD viewer uses Z up axis, so switch up axis if needed
+  if (res && up_axis_ == UA_Y_UP)
+    switchYZAxis();
+
   return res;
 }
 
@@ -123,6 +127,9 @@ bool PolygonSoup::loadFromObj(const boost::filesystem::path& filename)
     }
   }
   file.close();
+  up_axis_ = UA_Y_UP; // the obj standard does not say anything about up axis, but seems Y up is commonly used
+  computeAABB();
+  computeTriangleNormals();
   return true;
 }
 
@@ -166,7 +173,14 @@ void PolygonSoup::switchYZAxis()
 
     computeAABB();
     up_axis_ = UA_Y_UP;
+  }else{
+    std::cout << "PolygonSoup::switchYZAxis() : Unknown axis state" << std::endl;
   }
+}
+
+const PolygonSoup::UpAxis_t PolygonSoup::up_axis() const
+{
+  return up_axis_;
 }
   
 void PolygonSoup::computeAABB()

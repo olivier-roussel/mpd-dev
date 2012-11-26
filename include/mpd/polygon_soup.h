@@ -50,6 +50,8 @@ public:
 
   const std::vector<Eigen::Vector3d>& normals() const;
 
+  const UpAxis_t up_axis() const;
+
   bool isEmpty() const;
 
   bool loadFromFile(const boost::filesystem::path& path);

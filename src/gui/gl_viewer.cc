@@ -160,7 +160,7 @@ void GLViewer::_update()
   _renderScene();
   _handleGUI();
 
-  // schedule next update excepted if is_done() condition reached
+  // schedule next update excepted if is_done() condition not reached
   if (!is_done())
   {
     const int refresh_time = fps_max_ <= 0 ? 0 : 1000 / fps_max_;
@@ -172,6 +172,7 @@ void GLViewer::_update()
 
 bool GLViewer::_init()
 {
+    is_done_ = false;
 
    // Init SDL
    if (SDL_Init(SDL_INIT_EVERYTHING) != 0) 

@@ -31,15 +31,17 @@ SET(PROJECT_URL "")
 
 SET(CUSTOM_HEADER_DIR mpd)
 SET(${PROJECT_NAME}_HEADERS
-  include/${CUSTOM_HEADER_DIR}/types.h
-  include/${CUSTOM_HEADER_DIR}/environment.h
-  include/${CUSTOM_HEADER_DIR}/polygon_soup.h
   include/${CUSTOM_HEADER_DIR}/algorithm.h
-  include/${CUSTOM_HEADER_DIR}/mpd_controller.h
-  include/${CUSTOM_HEADER_DIR}/constants.h
-  include/${CUSTOM_HEADER_DIR}/physics_engine.h
   include/${CUSTOM_HEADER_DIR}/bullet_physics_wrapper.h
   include/${CUSTOM_HEADER_DIR}/bullet_utils.h
+  include/${CUSTOM_HEADER_DIR}/constants.h
+  include/${CUSTOM_HEADER_DIR}/environment.h
+  include/${CUSTOM_HEADER_DIR}/mpd_controller.h
+  include/${CUSTOM_HEADER_DIR}/physics_engine.h
+  #  include/${CUSTOM_HEADER_DIR}/physics_manager.h
+  include/${CUSTOM_HEADER_DIR}/physics_thread.h
+  include/${CUSTOM_HEADER_DIR}/polygon_soup.h
+  include/${CUSTOM_HEADER_DIR}/types.h
 )
 
 SETUP_PROJECT()
