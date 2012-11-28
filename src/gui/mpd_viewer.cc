@@ -104,7 +104,7 @@ void MPDViewer::handleGUI()
     int env_to_load = -1;
     for (int i = 0; i < env_files_.size() && env_to_load < 0; ++i)
     {
-      if (imguiItem(env_files_[i].filename().c_str()))
+      if (imguiItem(env_files_[i].filename().string().c_str()))
         env_to_load = i;
     }
     if (env_to_load != -1)

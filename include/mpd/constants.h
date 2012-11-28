@@ -22,6 +22,8 @@
 
 #include <Eigen/Core>
 
+static const double kPi = 3.14159265358979323846;
+
 /**
  * Transformation matrix from Z up axis to Y up axis (both direct & right handed)
  *         |  1  0  0 |

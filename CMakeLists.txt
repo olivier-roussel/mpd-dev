@@ -50,22 +50,36 @@ set(OMPL_PHYSICS_LIBS "")
 
 set(SHARE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/share/mpd")
 CONFIG_FILES("src/config.h")
+include_directories("${CMAKE_BINARY_DIR}/include/${CUSTOM_HEADER_DIR}")
 include_directories("${CMAKE_BINARY_DIR}/src")
 
 # Dependencies
 
 # Use Boost
-SEARCH_FOR_BOOST()
+if (WIN32)
+	set(Boost_USE_STATIC_LIBS OFF)
+	set(Boost_USE_MULTITHREADED ON) 
+	set(Boost_USE_STATIC_RUNTIME OFF)
+	#add_definitions( -DBOOST_ALL_DYN_LINK )
+	find_package(Boost 1.48 COMPONENTS chrono date_time filesystem regex system thread )
+else()
+	SEARCH_FOR_BOOST()
+endif()
 # TODO Fix this instead hard coding boost include dir in src/cMakeLists
 
 # Use Eigen
 ADD_REQUIRED_DEPENDENCY("eigen3 >= 3.1.1")
 
 # Use assimp for Collada files
-ADD_REQUIRED_DEPENDENCY("assimp >= 2.0")
+#ADD_REQUIRED_DEPENDENCY("assimp >= 2.0")
 
 # Use SDL for the viewer / GUI
 ADD_REQUIRED_DEPENDENCY("sdl >= 1.2.15")
+message("SDL_FOUND=${SDL_FOUND}")
+message("SDL_LIBRARY_DIRS=${SDL_LIBRARY_DIRS}")
+message("SDL_LIBRARIES=${SDL_LIBRARIES}")
+
+#ADD_REQUIRED_DEPENDENCY("sdl2 >= 2.0.0")
 
 # Use Bullet as one of the physical engine
 ADD_REQUIRED_DEPENDENCY("bullet >= 2.80")

@@ -20,6 +20,7 @@
 #include "render_helpers.h"
 
 #include "SDL_opengl.h"
+#include "mpd/constants.h"
 
 void drawCylinder(float minx, float miny, float minz, float maxx, float maxy, float maxz, const Eigen::Vector4f& color_)
 {
@@ -27,7 +28,7 @@ void drawCylinder(float minx, float miny, float minz, float maxx, float maxy, fl
   float dir[NUM_SEG*2];
   for (int i = 0; i < NUM_SEG; ++i)
   {
-    const float a = (float)i/(float)NUM_SEG*(float)M_PI*2;
+    const float a = (float)i/(float)NUM_SEG*(float)kPi*2;
     dir[i*2] = cosf(a);
     dir[i*2+1] = sinf(a);
   }
