@@ -32,13 +32,12 @@ SET(PROJECT_URL "")
 SET(CUSTOM_HEADER_DIR mpd)
 SET(${PROJECT_NAME}_HEADERS
   include/${CUSTOM_HEADER_DIR}/algorithm.h
-  include/${CUSTOM_HEADER_DIR}/bullet_physics_wrapper.h
+  include/${CUSTOM_HEADER_DIR}/bullet_engine_wrapper.h
   include/${CUSTOM_HEADER_DIR}/bullet_utils.h
   include/${CUSTOM_HEADER_DIR}/constants.h
   include/${CUSTOM_HEADER_DIR}/environment.h
   include/${CUSTOM_HEADER_DIR}/mpd_controller.h
   include/${CUSTOM_HEADER_DIR}/physics_engine.h
-  #  include/${CUSTOM_HEADER_DIR}/physics_manager.h
   include/${CUSTOM_HEADER_DIR}/physics_thread.h
   include/${CUSTOM_HEADER_DIR}/polygon_soup.h
   include/${CUSTOM_HEADER_DIR}/types.h
@@ -46,26 +45,30 @@ SET(${PROJECT_NAME}_HEADERS
 
 SETUP_PROJECT()
 
-set(OMPL_PHYSICS_LIBS "")
+# Always OFF on Unix systems
+IF (WIN32)
+ OPTION(MPD_DEBUG "Required if Debug build for linking with debug libs on Windows" OFF)
+ELSE (WIN32)
+ SET(MPD_DEBUG OFF)
+ENDIF (WIN32)
 
 set(SHARE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/share/mpd")
 CONFIG_FILES("src/config.h")
-include_directories("${CMAKE_BINARY_DIR}/include/${CUSTOM_HEADER_DIR}")
-include_directories("${CMAKE_BINARY_DIR}/src")
+#include_directories("${CMAKE_BINARY_DIR}/include")
+#include_directories("${CMAKE_BINARY_DIR}/src")
 
 # Dependencies
 
 # Use Boost
-if (WIN32)
+IF (WIN32)
 	set(Boost_USE_STATIC_LIBS OFF)
 	set(Boost_USE_MULTITHREADED ON) 
 	set(Boost_USE_STATIC_RUNTIME OFF)
 	#add_definitions( -DBOOST_ALL_DYN_LINK )
 	find_package(Boost 1.48 COMPONENTS chrono date_time filesystem regex system thread )
-else()
+else (WIN32)
 	SEARCH_FOR_BOOST()
-endif()
-# TODO Fix this instead hard coding boost include dir in src/cMakeLists
+endif (WIN32)
 
 # Use Eigen
 ADD_REQUIRED_DEPENDENCY("eigen3 >= 3.1.1")
@@ -75,14 +78,14 @@ ADD_REQUIRED_DEPENDENCY("eigen3 >= 3.1.1")
 
 # Use SDL for the viewer / GUI
 ADD_REQUIRED_DEPENDENCY("sdl >= 1.2.15")
-message("SDL_FOUND=${SDL_FOUND}")
-message("SDL_LIBRARY_DIRS=${SDL_LIBRARY_DIRS}")
-message("SDL_LIBRARIES=${SDL_LIBRARIES}")
-
 #ADD_REQUIRED_DEPENDENCY("sdl2 >= 2.0.0")
 
 # Use Bullet as one of the physical engine
-ADD_REQUIRED_DEPENDENCY("bullet >= 2.80")
+IF (MPD_DEBUG)
+  ADD_REQUIRED_DEPENDENCY("bulletd >= 2.80")
+ELSE (MPD_DEBUG)
+  ADD_REQUIRED_DEPENDENCY("bullet >= 2.80")
+ENDIF (MPD_DEBUG)
 
 # Use ompl motion planning lib
 #ADD_REQUIRED_DEPENDENCY("ompl >= 0.11.1")

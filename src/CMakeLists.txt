@@ -18,46 +18,59 @@
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories("${Boost_INCLUDE_DIR}")
 
-message("Boost_INCLUDE_DIR=${Boost_INCLUDE_DIR}")
-message("Boost_LIBRARY_DIRS=${Boost_LIBRARY_DIRS}")
-message("Boost_LIBRARIES=${Boost_LIBRARIES}")
+# Setting up target
+SET(EXECUTABLE_NAME mpd-dev-app)
 
-SET(EXECUTABLE_NAME mpd-dev-gui)
+# Must lists all required dependencies here
+IF (MPD_DEBUG)
+  SET(${EXECUTABLE_NAME}_PKG_DEPS "eigen3" "bulletd" "sdl")
+ELSE (MPD_DEBUG)
+  SET(${EXECUTABLE_NAME}_PKG_DEPS "eigen3" "bullet" "sdl")
+ENDIF (MPD_DEBUG)
+
+# On windows, link_directories must be called before setting up the target.
+# As the PKG_CONFIG_USE_DEPENDENCY macro is calling both TARGET_LINK_LIBRARIES and
+# LINK_DIRECTORIES, one will not work. So we have to separate the calls.
+# TODO : update cmake / pkgconfig buildchain for windows compatibility
+IF (WIN32)
+  FOREACH(_PKG_DEP ${${EXECUTABLE_NAME}_PKG_DEPS})
+    BUILD_PREFIX_FOR_PKG(${_PKG_DEP} _DEP_PREFIX)
+    LINK_DIRECTORIES(${${_DEP_PREFIX}_LIBRARY_DIRS})
+  ENDFOREACH()
+ENDIF (WIN32)
+
+FILE(GLOB ${EXECUTABLE_NAME}_HEADERS 
+	${CMAKE_SOURCE_DIR}/include/${CUSTOM_HEADER_DIR}/*.h)
+FILE(GLOB ${EXECUTABLE_NAME}_PRIV_HEADERS 
+	${CMAKE_CURRENT_SOURCE_DIR}/*.h)
+FILE(GLOB ${EXECUTABLE_NAME}_SOURCES
+	${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
+
+# App gui (TODO: make the viewer as a submodule)
+FILE(GLOB ${EXECUTABLE_NAME}_GUI_HEADERS 
+  ${CMAKE_CURRENT_SOURCE_DIR}/gui/*.h)
+FILE(GLOB ${EXECUTABLE_NAME}_GUI_SOURCES 
+  ${CMAKE_CURRENT_SOURCE_DIR}/gui/*.cc)
 
 ADD_EXECUTABLE(${EXECUTABLE_NAME}
-  algorithm.cc
-  bullet_engine_wrapper.cc
-  bullet_utils.cc
-  environment.cc
-  main.cc
-  mpd_controller.cc
-  #  physics_manager.cc
-  physics_thread.cc
-  polygon_soup.cc
-  gui/imgui.cc
-  gui/imgui_render_gl.cc
-  gui/ugly_font.cc
-  gui/utils.cc
-  gui/gl_viewer.cc
-  gui/render_helpers.cc
-  gui/mpd_viewer.cc
-  gui/file_utils.cc
-  gui/polygon_soup_renderer.cc
+  ${${EXECUTABLE_NAME}_SOURCES}
+  ${${EXECUTABLE_NAME}_HEADERS}
+  ${${EXECUTABLE_NAME}_PRIV_HEADERS}
+  ${${EXECUTABLE_NAME}_GUI_SOURCES}
+  ${${EXECUTABLE_NAME}_GUI_HEADERS}
   )
+  
+SOURCE_GROUP("gui\\Headers" FILES ${${EXECUTABLE_NAME}_GUI_HEADERS})
+SOURCE_GROUP("gui\\Sources" FILES ${${EXECUTABLE_NAME}_GUI_SOURCES})
 
-PKG_CONFIG_USE_DEPENDENCY(${EXECUTABLE_NAME} eigen3)
-#PKG_CONFIG_USE_DEPENDENCY(${EXECUTABLE_NAME} assimp)
-PKG_CONFIG_USE_DEPENDENCY(${EXECUTABLE_NAME} sdl)
-PKG_CONFIG_USE_DEPENDENCY(${EXECUTABLE_NAME} bullet)
-#PKG_CONFIG_USE_DEPENDENCY(${EXECUTABLE_NAME} ompl)
+# Use pkgconfig dependencies
+FOREACH(_PKG_DEP ${${EXECUTABLE_NAME}_PKG_DEPS})
+  PKG_CONFIG_USE_DEPENDENCY(${EXECUTABLE_NAME} ${_PKG_DEP})
+ENDFOREACH()
 
 find_package(OpenGL REQUIRED)
 
-message("OpenGL_INCLUDE_DIR=${OPENGL_INCLUDE_DIR}")
-
-message("OpenGL_LIBRARIES=${OPENGL_LIBRARIES}")
-
-TARGET_LINK_LIBRARIES(${EXECUTABLE_NAME} ${OMPL_PHYSICS_LIBS} ${Boost_LIBRARIES} ${OPENGL_LIBRARIES})
+TARGET_LINK_LIBRARIES(${EXECUTABLE_NAME} ${Boost_LIBRARIES} ${OPENGL_LIBRARIES})
 
 INSTALL(TARGETS ${EXECUTABLE_NAME} DESTINATION bin)
 
