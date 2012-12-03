@@ -20,26 +20,19 @@
 #ifndef MPD_DEV_ENVIRONMENT_H_
 #define MPD_DEV_ENVIRONMENT_H_
 
-#include "mpd/polygon_soup.h"
+#include <Eigen/Geometry>
+
+#include "mpd/rigid_body.h"
 #include "mpd/types.h"
 
-class Environment {
+class Environment : public RigidBody
+{
 public:
-  Environment();
+  Environment(const Eigen::Affine3d& i_transform);
   virtual ~Environment();
-
-  const AABB& getAABB() const;
 
   bool loadPolygonSoup(const boost::filesystem::path& path);
 
-  const PolygonSoup& polygon_soup() const;
-
-  void switchPolygonSoupAxis();
-
-  void invertPolygonSoupTriangles();
-
-private:
-  PolygonSoup polygon_soup_;
 };
 
 #endif // MPD_DEV_ENVIRONMENT_H_

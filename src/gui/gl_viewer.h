@@ -27,8 +27,20 @@
 #include <boost/asio.hpp>
 
 
-class GLViewer {
+class GLViewer 
+{
 public:
+
+	enum RenderingMode_t
+	{
+		RM_WIREFRAME = 0,
+		//RM_FLAT_LINES,
+		RM_FLAT,
+		RM_NB_RENDERING_MODES
+	};
+
+	static const std::string getRenderingModeName(const RenderingMode_t i_render_mode);
+
   GLViewer(const std::string& label, int width, int height, int fps_max);
   virtual ~GLViewer();
 
@@ -75,6 +87,7 @@ protected:
   float far_clip() const;
   const Eigen::Vector3f& camera_pos() const;
   const Eigen::Vector2i& mouse_pos() const;
+	const RenderingMode_t render_mode() const;
 
   void set_is_done(bool is_done);
   void set_is_mouse_over_gui(bool is_mouse_over_gui);
@@ -83,8 +96,11 @@ protected:
   void set_far_clip(float far_clip);
   void set_camera_pos(const Eigen::Vector3f& camera_pos);
   void set_mouse_pos(const Eigen::Vector2i& mouse_pos);
+	void set_render_mode(const RenderingMode_t i_rendering_mode);
 
 private:
+	RenderingMode_t render_mode_;	
+
   bool is_done_;                // True if viewer must quit
   bool is_mouse_over_gui_;      // True if mouse is over the GUI
   int mouse_scroll_;            // mouse scroll

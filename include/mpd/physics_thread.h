@@ -28,7 +28,8 @@
 /**
  * \class PhysicsThread
  */
-class PhysicsThread {
+class PhysicsThread 
+{
 
 public:
   PhysicsThread(PhysicsEngine* i_physics_engine);
@@ -59,8 +60,6 @@ protected:
   /**
    * Protected methods
    */
-
-  bool _init();
 
   void _update();
 

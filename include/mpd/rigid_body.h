@@ -17,19 +17,34 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#ifndef MPD_DEV_GUI_RENDER_HERLPERS_H_
-#define MPD_DEV_GUI_RENDER_HERLPERS_H_
+#ifndef MPD_DEV_RIGID_BODY_H_
+#define MPD_DEV_RIGID_BODY_H_
 
-#include <Eigen/Core>
-#include <vector>
-#include <boost/tuple/tuple.hpp>
+#include <Eigen/Geometry>
+#include "mpd/polygon_soup.h"
 
-void drawCylinder(float minx, float miny, float minz, float maxx, float maxy, float maxz, const Eigen::Vector4f& color_);
+class RigidBody
+{
+public:
+	RigidBody(double i_mass, const Eigen::Affine3d& i_tranform);
+	virtual ~RigidBody();
 
-void renderReferential(const Eigen::Vector3d& pos, float len_factor, float width_factor);
+	void switchPolygonSoupAxis();
 
-void drawLineArray(const std::vector<boost::tuple<Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d> >& i_coloured_line_array);
+  void invertPolygonSoupTriangles();
 
-void draw3dText(const Eigen::Vector3d& pos, const std::string& text, const Eigen::Vector3d& color, const double scale = 1.);
+	const PolygonSoup& polygon_soup() const;
 
-#endif // MPD_DEV_GUI_RENDER_HERLPERS_H_
+	PolygonSoup& polygon_soup_mutable();
+
+	const Eigen::Affine3d& transform() const;
+
+	double mass() const;
+
+protected:
+	double m_mass;
+	PolygonSoup m_geometry;	
+	Eigen::Affine3d m_transform;
+};
+
+#endif // MPD_DEV_RIGID_BODY_H_

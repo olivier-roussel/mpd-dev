@@ -38,7 +38,7 @@ GLViewer::GLViewer(const std::string& label, int width, int height, int fps_max)
   mouse_pos_(0, 0), rot_(45.f, 45.f), width_(width), height_(height), fps_max_(fps_max),
   far_clip_(500.f), camera_pos_(0.f, 0.f, 0.f), last_time_(0), mouse_scroll_(0),
   move_f_(0.f), move_b_(0.f), move_l_(0.f), move_r_(0.f), move_u_(0.f), move_d_(0.f),
-  timer_(io_service_), io_service_()
+  timer_(io_service_), io_service_(), render_mode_(RM_FLAT)
 {
 }
 
@@ -73,22 +73,27 @@ float GLViewer::far_clip() const
 
 const Eigen::Vector3f& GLViewer::camera_pos() const
 {
-  return camera_pos_;
+	return camera_pos_;
 }
 
 const Eigen::Vector2i& GLViewer::mouse_pos() const
 {
-  return mouse_pos_;
+	return mouse_pos_;
+}
+
+const GLViewer::RenderingMode_t GLViewer::render_mode() const
+{
+	return render_mode_;
 }
 
 void GLViewer::set_is_done(bool is_done)
 {
-  is_done_ = is_done;
+	is_done_ = is_done;
 }
 
 void GLViewer::set_is_mouse_over_gui(bool is_mouse_over_gui)
 {
-  is_mouse_over_gui_ = is_mouse_over_gui;
+	is_mouse_over_gui_ = is_mouse_over_gui;
 }
 
 void GLViewer::set_mouse_scroll(int mouse_scroll)
@@ -114,6 +119,11 @@ void GLViewer::set_camera_pos(const Eigen::Vector3f& camera_pos)
 void GLViewer::set_mouse_pos(const Eigen::Vector2i& mouse_pos)
 {
   mouse_pos_ = mouse_pos;
+}
+
+void GLViewer::set_render_mode(const RenderingMode_t i_rendering_mode)
+{
+	render_mode_ = i_rendering_mode;
 }
 
 void GLViewer::_quit()
@@ -181,6 +191,8 @@ bool GLViewer::_init()
      return false;
    }
  
+	 //SDL_EnableUNICODE(1);
+
    // Init SDL_OpenGL
    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
@@ -299,9 +311,9 @@ void GLViewer::_renderScene()
 
   // Handle keyboard movement.
   Uint8* keystate = SDL_GetKeyState(NULL);
-  move_f_ = clamp(move_f_ + dt * 4 * (keystate[SDLK_z] ? 1 : -1), 0.0f, 1.0f);
+  move_f_ = clamp(move_f_ + dt * 4 * (keystate[SDLK_w] ? 1 : -1), 0.0f, 1.0f);
   move_b_ = clamp(move_b_ + dt * 4 * (keystate[SDLK_s] ? 1 : -1), 0.0f, 1.0f);
-  move_l_ = clamp(move_l_ + dt * 4 * (keystate[SDLK_q] ? 1 : -1), 0.0f, 1.0f);
+  move_l_ = clamp(move_l_ + dt * 4 * (keystate[SDLK_a] ? 1 : -1), 0.0f, 1.0f);
   move_r_ = clamp(move_r_ + dt * 4 * (keystate[SDLK_d] ? 1 : -1), 0.0f, 1.0f);
   move_u_ = clamp(move_u_ + dt * 4 * (keystate[SDLK_r] ? 1 : -1), 0.0f, 1.0f);
   move_d_ = clamp(move_d_ + dt * 4 * (keystate[SDLK_f] ? 1 : -1), 0.0f, 1.0f);
@@ -360,7 +372,18 @@ void GLViewer::_renderScene()
   camera_pos_.z() += movez * static_cast<float>(model[9]);
 
   // render scene
-  renderScene();
+	if (render_mode_ == RM_FLAT)
+	{
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		renderScene();
+	}else if (render_mode_ == RM_WIREFRAME)
+	{
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		renderScene();
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}else
+		std::cout << "[ERROR] GLViewer::_renderScene() : Unknown rendering mode" << std::endl;
+
 }
 
 void GLViewer::_handleGUI()
@@ -381,4 +404,12 @@ void GLViewer::_handleGUI()
   glEnable(GL_DEPTH_TEST);
   // double buffering
   SDL_GL_SwapBuffers();
+}
+
+
+const std::string GLViewer::getRenderingModeName(const RenderingMode_t i_render_mode)
+{
+	const static char * const rendering_modes_names_array[] = { "Wireframe"/*, "Flat lines"*/, "Flat" };
+	const static std::vector<std::string> v_rendering_modes_names(rendering_modes_names_array, rendering_modes_names_array + RM_NB_RENDERING_MODES);
+	return v_rendering_modes_names[static_cast<int>(i_render_mode)];
 }

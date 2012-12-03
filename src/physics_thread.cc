@@ -27,7 +27,7 @@ PhysicsThread::PhysicsThread(PhysicsEngine* i_physics_engine) :
   timer_(io_service_),
   io_service_()
 {
-  assert(physics_engine_ != NULL);
+  assert(physics_engine_ != NULL && "physics thread initialized with NULL physics engine");
 }
 
 PhysicsThread::~PhysicsThread()
@@ -59,20 +59,15 @@ bool PhysicsThread::is_done() const
 
 void PhysicsThread::_run()
 {
-  if (_init())
+  if (physics_engine_->is_init())
   {
     timer_.expires_from_now(boost::posix_time::milliseconds(loop_time_ms_));
     timer_.async_wait(boost::bind(&PhysicsThread::_update, this));
     io_service_.run();
   }else{
-    std::cout << "Could not initialize the physics engine" << std::endl;
+    std::cout << "PhysicsThread::_run() : Physics engine not initialized" << std::endl;
     is_done_ = true;
   }
-}
-
-bool PhysicsThread::_init()
-{
-  return physics_engine_->init();
 }
 
 void PhysicsThread::_update()

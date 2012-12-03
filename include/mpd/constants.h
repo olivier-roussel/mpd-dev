@@ -24,6 +24,10 @@
 
 static const double kPi = 3.14159265358979323846;
 
+static const unsigned int kDefaultPhysicsTimeStepMs = 20;
+
+static const Eigen::Vector3d kGravity(0., 0., -9.8);
+
 /**
  * Transformation matrix from Z up axis to Y up axis (both direct & right handed)
  *         |  1  0  0 |

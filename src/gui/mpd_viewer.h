@@ -22,30 +22,66 @@
 
 #include "gui/gl_viewer.h"
 #include "mpd/algorithm.h"
-#include "mpd/mpd_controller.h"
 
 #include <boost/filesystem/path.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/thread/mutex.hpp>
 
-class MPDViewer : public GLViewer {
+class MPDController;
 
+class MPDViewer : public GLViewer 
+{
 public:
+
+	/**
+	* Constructors, destructors
+	*/
   MPDViewer(const std::string& label, int width, int height, int fps_max, MPDController& mpd_controller);
   virtual ~MPDViewer();
 
+	/**
+	* Debug drawing methods for physics _ to enable physics engine to draw within the viewer thread
+	*/
+	void addPhysicsLine(const Eigen::Vector3d& i_from, const Eigen::Vector3d& i_to, const Eigen::Vector3d& i_color);
+
+	void addPhysicsText(const Eigen::Vector3d& i_pos, const std::string& i_text);
+
+	void clearPhysicsObjects();
+
+	void isRenderingPhysics(bool i_is_rendering_physics);
+
+	boost::mutex& getPhysicsObjectsMutex();
+
 private:
-  void renderScene();
 
-  void handleGUI();
-
+	bool render_physics_;					// true if viewer must render physics
+	bool render_referential_;			// true if world referential must be rendered
 
   int main_scroll_;             // Scroller for main menu
-  bool is_show_algos_;          // true if algo selection menu visible
+  int display_scroll_;          // Scroller for display menu
   MotionPlanningAlgorithms algo_; // current algorithm for MP
-  bool is_show_envs_;
-  int env_scroll_;
   std::string env_name_;
+  MPDController& mpd_controller_;  // controller
+
+	/**
+	* Internal viewer stuff
+	*/
+  void renderScene();
+  void handleGUI();
+
+  int env_scroll_;
+  bool is_show_envs_;
+  bool is_show_algos_;          // true if algo selection menu visible
+	double mass_next_object_;			// mass of next object to be added
+	int body_count_;							// number of bodies in the scene (excepted environment)
+
   std::vector<boost::filesystem::path> env_files_;  // env models files
 
-  MPDController& mpd_controller_;  // controller
+	/**
+	* Debug drawing attributes for physics
+	*/
+	boost::mutex debug_physics_objects_mutex_;
+	std::vector<boost::tuple<Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d> > physics_debug_lines_;	// Lines to draw from physics as a tuple (start pos, end pos, color)
+	std::vector<boost::tuple<Eigen::Vector3d, std::string> > physics_debug_text_;	// 3d texts to draw from physics
 };
 #endif // MPD_DEV_GUI_MPD_VIEWER_H_

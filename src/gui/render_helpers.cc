@@ -20,7 +20,9 @@
 #include "render_helpers.h"
 
 #include "SDL_opengl.h"
+
 #include "mpd/constants.h"
+#include "gui/ugly_font.h"
 
 void drawCylinder(float minx, float miny, float minz, float maxx, float maxy, float maxz, const Eigen::Vector4f& color_)
 {
@@ -85,4 +87,30 @@ void renderReferential(const Eigen::Vector3d& pos, float len_factor, float width
     glVertex3f(0.f, 0.f, 1.f);
     glEnd();
   glPopMatrix();
+}
+
+void draw3dText(const Eigen::Vector3d& pos, const std::string& text, const Eigen::Vector3d& color, const double scale)
+{
+	glPushMatrix();
+	glColor3dv(color.data());
+	glTranslated(pos.x(), pos.y(), pos.z());
+	glScaled(scale, scale, scale);
+	char* idx_str = new char[text.length() + 1];
+	YsDrawUglyFont(text.c_str(), 1, 1);
+	glPopMatrix();
+	delete [] idx_str;
+}
+
+
+void drawLineArray(const std::vector<boost::tuple<Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d> >& i_coloured_line_array)
+{
+  glBegin(GL_LINES);
+	for (size_t i = 0 ; i < i_coloured_line_array.size() ; ++i)
+	{
+		const boost::tuple<Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d>& line = i_coloured_line_array[i];
+		glColor3dv(line.get<2>().data());
+		glVertex3dv(line.get<0>().data());
+		glVertex3dv(line.get<1>().data());
+	}
+	glEnd();
 }

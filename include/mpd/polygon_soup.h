@@ -40,10 +40,43 @@ public:
     UA_Z_UP
   };
 
+	/**
+	* Constructors & destructors
+	*/
+
   PolygonSoup();
   ~PolygonSoup();
 
+	/**
+	* Modifiers
+	*/
 
+	/**
+	* \post Must call computeAABB() once all vertices have been added.
+	*/
+	void addVertex(const Eigen::Vector3d& i_vert);
+
+	/**
+	* \post Must call computeTriangleNormals() once all triangles have been added.
+	*/
+	void addTriangle(const Triangle& i_tri);
+
+  bool loadFromFile(const boost::filesystem::path& path);
+
+  void clear();
+
+  void computeAABB();
+
+  void computeTriangleNormals();
+
+  void invertTriangles();
+
+  void switchYZAxis();
+
+	/**
+	* Accessors
+	*/
+	
   const std::vector<Eigen::Vector3d>& verts() const;
 
   const std::vector<Triangle>& tris() const;
@@ -54,15 +87,7 @@ public:
 
   bool isEmpty() const;
 
-  bool loadFromFile(const boost::filesystem::path& path);
-
   const AABB& aabb() const;
-
-  void clear();
-
-  void invertTriangles();
-
-  void switchYZAxis();
   
 private:
   std::vector<Eigen::Vector3d> verts_;      // Vertices array
@@ -73,9 +98,6 @@ private:
 
   bool loadFromObj(const boost::filesystem::path& filename);
 
-  void computeAABB();
-
-  void computeTriangleNormals();
 
 //  static const char * const kSupportedFileFormats;
 };

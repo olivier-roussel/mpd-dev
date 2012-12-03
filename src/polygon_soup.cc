@@ -62,6 +62,16 @@ const AABB& PolygonSoup::aabb() const
   return aabb_;
 }
 
+void PolygonSoup::addVertex(const Eigen::Vector3d& i_vert)
+{
+	verts_.push_back(i_vert);
+}
+
+void PolygonSoup::addTriangle(const Triangle& i_tri)
+{
+	tris_.push_back(i_tri);
+}
+
 bool PolygonSoup::loadFromFile(const boost::filesystem::path& path)
 {
   bool res = false;

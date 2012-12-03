@@ -19,12 +19,16 @@
 
 #include <iostream>
 #include "gui/mpd_viewer.h"
+#include "mpd/mpd_controller.h"
+#include "bullet_debug_drawer.h"
 
 int main(int argc, char **argv)
 {
   MPDController controller;
 
-  MPDViewer viewer("mpd-dev", 1024, 768, 40, controller);
+  MPDViewer viewer("mpd-dev", 1200, 960, 40, controller);
+
+	controller.setPhysicsDebugDrawer(&viewer);
 
   viewer.run();
 

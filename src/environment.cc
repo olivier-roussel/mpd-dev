@@ -19,7 +19,7 @@
 
 #include "mpd/environment.h"
 
-Environment::Environment()
+Environment::Environment(const Eigen::Affine3d& i_transform) : RigidBody(0., i_transform)
 {
 }
 
@@ -27,27 +27,7 @@ Environment::~Environment()
 {
 }
 
-const AABB& Environment::getAABB() const
-{
-  return polygon_soup_.aabb();
-}
-
 bool Environment::loadPolygonSoup(const boost::filesystem::path& path)
 {
-  return polygon_soup_.loadFromFile(path);
-}
-
-const PolygonSoup& Environment::polygon_soup() const
-{
-  return polygon_soup_;
-}
-
-void Environment::switchPolygonSoupAxis()
-{
-  polygon_soup_.switchYZAxis();
-}
-
-void Environment::invertPolygonSoupTriangles()
-{
-  polygon_soup_.invertTriangles();
+  return m_geometry.loadFromFile(path);
 }

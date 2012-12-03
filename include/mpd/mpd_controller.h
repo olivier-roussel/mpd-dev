@@ -20,26 +20,85 @@
 #ifndef MPD_DEV_MPD_CONTROLLER_H_
 #define MPD_DEV_MPD_CONTROLLER_H_
 
-#include "mpd/environment.h"
 #include <boost/filesystem/path.hpp>
 
-class MPDController {
+#include "mpd/rigid_body.h"
+#include "mpd/environment.h"
+#include "mpd/physics_engine.h"
+#include "mpd/physics_thread.h"
+
+class MPDViewer; // for debug drawing physics
+
+/**
+* \class MPDController
+* \brief Handles scene data and physics engine, and synchronize scene data with physics.
+*/
+
+class MPDController 
+{
 public:
   MPDController();
   virtual ~MPDController();
 
-  const Environment& environment() const;
+	bool initPhysics(const PhysicsEngine::ImplementationType i_physics_engine_type);
+	
+	void quitPhysics();
+
+	void setPhysicsTimeStep(unsigned int i_physics_time_step_ms);
 
   bool loadEnvironment(const boost::filesystem::path& path);
 
   void switchEnvironmentAxis();
 
   void invertEnvironmentTriangles();
+
+	void setPhysicsDebugDrawer(MPDViewer* i_viewer);
+
+	/**
+	*
+	* \pre Physics must have been initialized.
+	*/
+	void enableGravity(bool i_enable_gravity);
   
+	/**
+	*
+	* \pre Physics must have been initialized.
+	*/
+	void addRigidBox(const std::string& i_name, double i_mass, const Eigen::Affine3d& i_transform);
+
+	/**
+	* Accessors
+	*/
+
+	bool isPhysicsInitialized() const;
+
+	const Environment& environment() const;
+
+	const PhysicsEngine& physics_engine() const;
+
+	unsigned int physics_time_step_ms() const;
+
   bool isEnvironmentSet() const;
 
+	bool isPhysicsEngineSet() const;
+
+	const std::map<std::string, RigidBody*>& rigid_bodies() const;
+
+	PhysicsEngine* physics_engine_mutable();	// for debugging purpose
+
 private:
-  Environment* env_;
+  Environment* env_;								// owned
+	PhysicsEngine* physics_engine_;		// owned
+	PhysicsThread* physics_thread_;		// owned
+	std::map<std::string, RigidBody*> rigid_bodies_; // owned
+
+	unsigned int physics_time_step_ms_;
+
+	/**
+	* Debug viewer for physics
+	*/
+	MPDViewer* debug_physics_viewer_;
+
 };
 
 #endif // MPD_DEV_MPD_CONTROLLER_H_

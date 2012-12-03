@@ -20,13 +20,22 @@
 #ifndef MPD_DEV_PHYSICS_ENGINE_H_
 #define MPD_DEV_PHYSICS_ENGINE_H_
 
-#include "mpd/bullet_engine_wrapper.h"
+#include <Eigen/Geometry>
+#include "mpd/rigid_body.h"
+
+class PolygonSoup;
+
+/**
+* Debug drawer for physics
+*/
+class MPDViewer;
 
 /**
  * \class PhysicsEngine
  * \brief Common interface for physics engine to be used in mpd-dev.
  */
-class PhysicsEngine {
+class PhysicsEngine 
+{
 
 public:
   
@@ -38,19 +47,23 @@ public:
     NB_IMPLEMENTATION_TYPES
   };
 
-  virtual ~PhysicsEngine() = 0;
+	virtual ~PhysicsEngine() {}
 
   virtual bool init() = 0;
+
+	virtual bool is_init() = 0;
 
   virtual void doOneStep(unsigned int i_step_time_ms) = 0;
 
   virtual void quit() = 0;
 
-  virtual void addStaticRigidBody(const std::string& i_name, const PolygonSoup& i_soup, const Eigen::Affine3d& i_transform) = 0;
+  virtual void addStaticRigidBody(const std::string& i_name, const RigidBody& i_rigid_body) = 0;
 
-  virtual void addDynamicRigidBody(const Eigen::Affine3d& i_transform) = 0; // TODO
+  virtual void addDynamicRigidBody(const std::string& i_name, const RigidBody& i_rigid_body) = 0; 
 
   virtual void addDynamicSoftBody(const Eigen::Affine3d& i_transform) = 0; // TODO
+
+	virtual void enableGravity(bool i_enable_gravity) = 0;
 
 protected:
   PhysicsEngine() {}

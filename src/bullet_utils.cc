@@ -19,18 +19,26 @@
 
 #include "mpd/bullet_utils.h"
 
-namespace e2bt
+btVector3 toBtVector3(const Eigen::Vector3d& i_v)
 {
-
-btVector3 toBtVector3(const Eigen::Vector3d& v)
-{
-  return btVector3(static_cast<btScalar>(v.x()), static_cast<btScalar>(v.y()), static_cast<btScalar>(v.z()) );
+  return btVector3(static_cast<btScalar>(i_v.x()), static_cast<btScalar>(i_v.y()), static_cast<btScalar>(i_v.z()) );
 }
 
-void toBtVector3Array(const std::vector<Eigen::Vector3d>& in, btVector3* out)
+void toBtVector3Array(const std::vector<Eigen::Vector3d>& i_varray, btVector3* o_varray)
 {
-  for (size_t i = 0 ; i < in.size() ; ++i)
-    *(out+i) = toBtVector3(in[i]);
+  for (size_t i = 0 ; i < i_varray.size() ; ++i)
+    *(o_varray+i) = toBtVector3(i_varray[i]);
+}
+
+void toBtVector3Array(const std::vector<Eigen::Vector3d>& i_varray, const Eigen::Matrix3d& i_transform, btVector3* o_varray)
+{
+  for (size_t i = 0 ; i < i_varray.size() ; ++i)
+    *(o_varray+i) = toBtVector3(i_transform * i_varray[i]);
+}
+
+Eigen::Vector3d toEVector3(const btVector3& v)
+{
+	return Eigen::Vector3d(v.x(), v.y(), v.z());
 }
 
 btQuaternion toBtQuaternion(const Eigen::Quaterniond& q)
@@ -43,10 +51,15 @@ Eigen::Quaterniond toEQuaternion(const btQuaternion& q)
   return Eigen::Quaterniond(q.w(), q.x(), q.y(), q.z());
 }
 
-btTransform toBtTransform(const Eigen::Affine3d& t)
+btMatrix3x3 toBtMatrix3(const Eigen::Matrix3d& i_m)
 {
-  // TODO !!
-  return btTransform();
+	return btMatrix3x3(i_m(0, 0), i_m(0, 1), i_m(0, 2), 
+		i_m(1, 0), i_m(1, 1), i_m(1, 2),
+		i_m(2, 0), i_m(2, 1), i_m(2, 2));
 }
 
-} // namespace e2bt
+btTransform toBtTransform(const Eigen::Affine3d& t)
+{
+	return btTransform(toBtMatrix3(t.rotation()), toBtVector3(t.translation()));
+}
+

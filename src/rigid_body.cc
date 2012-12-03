@@ -17,19 +17,44 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#ifndef MPD_DEV_GUI_RENDER_HERLPERS_H_
-#define MPD_DEV_GUI_RENDER_HERLPERS_H_
+#include "mpd/rigid_body.h"
 
-#include <Eigen/Core>
-#include <vector>
-#include <boost/tuple/tuple.hpp>
+RigidBody::RigidBody(double i_mass, const Eigen::Affine3d& i_tranform) :
+	m_mass(i_mass),
+	m_transform(i_tranform)
+{
+}
 
-void drawCylinder(float minx, float miny, float minz, float maxx, float maxy, float maxz, const Eigen::Vector4f& color_);
+RigidBody::~RigidBody()
+{
+}
 
-void renderReferential(const Eigen::Vector3d& pos, float len_factor, float width_factor);
+const PolygonSoup& RigidBody::polygon_soup() const
+{
+	return m_geometry;
+}
 
-void drawLineArray(const std::vector<boost::tuple<Eigen::Vector3d, Eigen::Vector3d, Eigen::Vector3d> >& i_coloured_line_array);
+PolygonSoup& RigidBody::polygon_soup_mutable()
+{
+	return m_geometry;
+}
 
-void draw3dText(const Eigen::Vector3d& pos, const std::string& text, const Eigen::Vector3d& color, const double scale = 1.);
+const Eigen::Affine3d& RigidBody::transform() const
+{
+	return m_transform;
+}
 
-#endif // MPD_DEV_GUI_RENDER_HERLPERS_H_
+void RigidBody::switchPolygonSoupAxis()
+{
+  m_geometry.switchYZAxis();
+}
+
+void RigidBody::invertPolygonSoupTriangles()
+{
+  m_geometry.invertTriangles();
+}
+
+double RigidBody::mass() const
+{
+	return m_mass;
+}
