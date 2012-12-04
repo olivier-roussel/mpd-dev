@@ -17,49 +17,29 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
+#ifndef MPD_DEV_BULLET_BODIES_WRAPPER_H_
+#define MPD_DEV_BULLET_BODIES_WRAPPER_H_
+
 #include "mpd/rigid_body.h"
 
-RigidBody::RigidBody(double i_mass, const Eigen::Affine3d& i_tranform) :
-	m_mass(i_mass),
-	m_transform(i_tranform)
-{
-}
+#include "btBulletDynamicsCommon.h"
 
-RigidBody::~RigidBody()
+struct BulletRigidBody
 {
-}
+	btRigidBody* bt_rigid_body;	// owned by bullet engine wrapper
+	RigidBody* rigid_body;			// owned by generic engine
 
-const PolygonSoup& RigidBody::polygon_soup() const
-{
-	return m_geometry;
-}
+	inline BulletRigidBody(btRigidBody* i_bt_rigid_body, RigidBody* i_rigid_body) : 
+	bt_rigid_body(i_bt_rigid_body), rigid_body(i_rigid_body) {}
+};
 
-PolygonSoup& RigidBody::polygon_soup_mutable()
+struct BulletSoftBody
 {
-	return m_geometry;
-}
+	btSoftBody* bt_soft_body;		// owned by bullet engine wrapper
+	//SoftBody* soft_body; // TODO	// owned by generic engine
 
-const Eigen::Affine3d& RigidBody::transform() const
-{
-	return m_transform;
-}
+	//	inline BulletSoftBody(btSoftBody* i_bt_soft_body, SoftBody* i_soft_body) : 
+	//bt_soft_body(i_bt_soft_body), soft_body(i_soft_body) {}
+};
 
-void RigidBody::switchPolygonSoupAxis()
-{
-  m_geometry.switchYZAxis();
-}
-
-void RigidBody::invertPolygonSoupTriangles()
-{
-  m_geometry.invertTriangles();
-}
-
-double RigidBody::mass() const
-{
-	return m_mass;
-}
-
-void RigidBody::set_transform(const Eigen::Affine3d& i_transform)
-{
-	m_transform = i_transform;
-}
+#endif // MPD_DEV_BULLET_BODIES_WRAPPER_H_

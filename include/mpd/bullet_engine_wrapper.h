@@ -30,8 +30,7 @@
 
 #include "mpd/physics_engine.h"
 #include "mpd/bullet_utils.h"
-#include "mpd/polygon_soup.h"
-
+#include "mpd/bullet_bodies_wrapper.h"
 
 /**
 * Debug drawer for physics
@@ -51,27 +50,31 @@ public:
 
   bool init();
 
-	bool is_init();
-
   void doOneStep(unsigned int i_step_time_ms);
 
   void quit();
 
 	// XXX so far, only add once ! TODO add possibility to add many static objects
-  void addStaticRigidBody(const std::string& i_name, const RigidBody& i_rigid_body); 
+  bool addStaticRigidBody(const std::string& i_name, RigidBody* i_rigid_body); 
 
 	/**
 	* \pre Body must be convex
 	*/
-  void addDynamicRigidBody(const std::string& i_name, const RigidBody& i_rigid_body);
+  bool addDynamicRigidBody(const std::string& i_name, RigidBody* i_rigid_body);
 
-  void addDynamicSoftBody(const Eigen::Affine3d& i_transform);
+  bool addDynamicSoftBody(const std::string& i_name/*, SoftBody* i_soft_body*/);
 
 	void enableGravity(bool i_enable_gravity);
 
+	//const std::pair<bool, Eigen::Affine3d> getRigidBodyWorldTransform(const std::string& i_name) const;
+
+	//const std::map<std::string, Eigen::Affine3d> getRigidBodiesWorldTransform() const;
+
+	//const Eigen::Affine3d getSoftBodyWorldTransform(const std::string& i_name) const;
+
+	//const std::map<std::string, Eigen::Affine3d> getSoftBodiesWorldTransform() const;
+
 private:
-  unsigned int step_time_;   /**< Step time in microseconds. */
-  bool is_init_;
 	bool is_gravity_;
 
   std::vector<btCollisionShape*> 	 collision_shapes_;
@@ -84,8 +87,8 @@ private:
   std::map<std::string, btTriangleIndexVertexArray*> tris_indexes_arrays_;
   std::map<std::string, BulletBaseArray<btVector3>* > bodies_verts_;
   std::map<std::string, BulletBaseArray<int>* > bodies_tris_;
-  std::map<std::string, btRigidBody*> rigid_bodies_;
-  std::map<std::string, btSoftBody*> soft_bodies_;
+  std::map<std::string, BulletRigidBody> bt_rigid_bodies_;
+  std::map<std::string, BulletSoftBody> bt_soft_bodies_;
 
 	/**
 	* Debug drawer for physics

@@ -32,11 +32,12 @@ MPDController::MPDController()
 
 MPDController::~MPDController()
 {
-  if (env_)
-  {
-    delete env_;
-    env_ = NULL;
-  }
+	// not needed as environment is a rigid body managed by the phsyics engine
+  //if (env_)
+  //{
+  //  delete env_;
+  //  env_ = NULL;
+  //}
 	if (physics_thread_)
 	{
 		delete physics_thread_;
@@ -120,14 +121,7 @@ void MPDController::quitPhysics()
 		delete physics_engine_;
     physics_engine_ = NULL;
 	}
-	for (std::map<std::string, RigidBody*>::iterator it_bodies = rigid_bodies_.begin() ; it_bodies != rigid_bodies_.end() ; ++it_bodies)
-	{
-		if (it_bodies->second)
-		{
-			delete it_bodies->second;
-			it_bodies->second = NULL;
-		}
-	}
+
 }
 
 bool MPDController::initPhysics(const PhysicsEngine::ImplementationType i_physics_engine_type)
@@ -162,7 +156,7 @@ bool MPDController::initPhysics(const PhysicsEngine::ImplementationType i_physic
 	// synchronize physics with existing data
 	if (isEnvironmentSet())
 	{
-		physics_engine_->addStaticRigidBody("environment", *env_);
+		physics_engine_->addStaticRigidBody("environment", env_);
 	}
 	
 	// init new physics thread
@@ -188,11 +182,11 @@ void MPDController::addRigidBox(const std::string& i_name, double i_mass, const 
 
 	box_geom.addVertex(Eigen::Vector3d(-0.5, 0.5, 0.5));
 	box_geom.addVertex(Eigen::Vector3d(0.5, 0.5, 0.5));
-	box_geom.addVertex(Eigen::Vector3d(-0.5, 0.5, 0.5));
+	box_geom.addVertex(Eigen::Vector3d(0.5, -0.5, 0.5));
 	box_geom.addVertex(Eigen::Vector3d(-0.5, -0.5, 0.5));
 	box_geom.addVertex(Eigen::Vector3d(-0.5, 0.5, -0.5));
 	box_geom.addVertex(Eigen::Vector3d(0.5, 0.5, -0.5));
-	box_geom.addVertex(Eigen::Vector3d(-0.5, 0.5, -0.5));
+	box_geom.addVertex(Eigen::Vector3d(0.5, -0.5, -0.5));
 	box_geom.addVertex(Eigen::Vector3d(-0.5, -0.5, -0.5));
 
 	box_geom.addTriangle(Triangle(0, 3, 1));
@@ -216,9 +210,7 @@ void MPDController::addRigidBox(const std::string& i_name, double i_mass, const 
 	box_geom.computeAABB();
 	box_geom.computeTriangleNormals();
 
-	rigid_bodies_.insert(std::make_pair(i_name, box_body));
-
-	physics_engine_->addDynamicRigidBody(i_name, *box_body);
+	physics_engine_->addDynamicRigidBody(i_name, box_body);
 }
 
 void MPDController::setPhysicsDebugDrawer(MPDViewer* i_viewer)
@@ -228,7 +220,3 @@ void MPDController::setPhysicsDebugDrawer(MPDViewer* i_viewer)
 	debug_physics_viewer_ = i_viewer;
 }
 
-const std::map<std::string, RigidBody*>& MPDController::rigid_bodies() const
-{
-	return rigid_bodies_;
-}

@@ -39,6 +39,8 @@ public:
 
 	const Eigen::Affine3d& transform() const;
 
+	void set_transform(const Eigen::Affine3d& i_transform);
+
 	double mass() const;
 
 protected:

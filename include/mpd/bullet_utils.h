@@ -80,5 +80,7 @@ Eigen::Quaterniond toEQuaternion(const btQuaternion& q);
 
 btTransform toBtTransform(const Eigen::Affine3d& t);
 
+Eigen::Affine3d toETransform(const btTransform& t);
+
 #endif // MPD_DEV_BULLET_UTILS_H_
 

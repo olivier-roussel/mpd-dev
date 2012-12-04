@@ -20,9 +20,11 @@
 #ifndef MPD_DEV_GUI_POLYGON_SOUP_RENDERER_H_
 #define MPD_DEV_GUI_POLYGON_SOUP_RENDERER_H_
 
-#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include "mpd/polygon_soup.h"
 
 void drawPolygonSoup(const PolygonSoup& soup, const Eigen::Vector4d& i_base_color);
+
+void drawPolygonSoup(const PolygonSoup& soup, const Eigen::Affine3d& transform, const Eigen::Vector4d& i_base_color);
 
 #endif // MPD_DEV_GUI_POLYGON_SOUP_RENDERER_H_

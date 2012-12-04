@@ -20,6 +20,7 @@
 #ifndef MPD_DEV_PHYSICS_ENGINE_H_
 #define MPD_DEV_PHYSICS_ENGINE_H_
 
+#include <map>
 #include <Eigen/Geometry>
 #include "mpd/rigid_body.h"
 
@@ -47,26 +48,80 @@ public:
     NB_IMPLEMENTATION_TYPES
   };
 
-	virtual ~PhysicsEngine() {}
+	virtual ~PhysicsEngine();
 
-  virtual bool init() = 0;
 
-	virtual bool is_init() = 0;
+	/**
+	* ------------------------------------
+	* Interface
+	* ------------------------------------
+	*/
 
+	/**
+	* \warning Inherited classes that reimplements this method should call PhysicsEngine::init() at first during their own init().
+	*/
+  virtual bool init();
+
+	/**
+	* \warning Implementations of doOneStep() method must update bodies transformations of this class at each step.
+	*/
   virtual void doOneStep(unsigned int i_step_time_ms) = 0;
 
-  virtual void quit() = 0;
+	/**
+	* \warning Inherited classes that reimplements this method should call PhysicsEngine::quit() at end during their own quit().
+	*/
+  virtual void quit();
 
-  virtual void addStaticRigidBody(const std::string& i_name, const RigidBody& i_rigid_body) = 0;
+	/**
+	* \warning Inherited classes that reimplements this method should call PhysicsEngine::addStaticRigidBody() at first during their own addStaticRigidBody().
+	*/
+	virtual bool addStaticRigidBody(const std::string& i_name, RigidBody* i_rigid_body);
 
-  virtual void addDynamicRigidBody(const std::string& i_name, const RigidBody& i_rigid_body) = 0; 
+	/**
+	* \warning Inherited classes that reimplements this method should call PhysicsEngine::addDynamicRigidBody() at first during their own addDynamicRigidBody().
+	*/
+	virtual bool addDynamicRigidBody(const std::string& i_name, RigidBody* i_rigid_body); 
 
-  virtual void addDynamicSoftBody(const Eigen::Affine3d& i_transform) = 0; // TODO
+	/**
+	* \warning Inherited classes that reimplements this method should call PhysicsEngine::addDynamicSoftBody() at first during their own addDynamicSoftBody().
+	*/
+  virtual bool addDynamicSoftBody(const std::string& i_name/*, SoftBody* i_soft_body*/); // TODO
 
 	virtual void enableGravity(bool i_enable_gravity) = 0;
 
+	/**
+	* ------------------------------------
+	* Accessors
+	* ------------------------------------
+	*/
+
+	/**
+	*
+	* \brief Returns world transforms of all bodies in simulation.
+	*/
+	//virtual const std::map<std::string, Eigen::Affine3d> getRigidBodiesWorldTransform() const = 0;
+
+	const std::map<std::string, RigidBody*>& rigid_bodies() const;
+
+	bool is_init() const;
+
 protected:
-  PhysicsEngine() {}
+	/**
+	* ------------------------------------
+	* Protected methods
+	* ------------------------------------
+	*/
+  PhysicsEngine();
+	void set_is_init(bool i_is_init);
+
+
+	/**
+	* ------------------------------------
+	* Attributes
+	* ------------------------------------
+	*/
+  bool is_init_;
+	std::map<std::string, RigidBody*> rigid_bodies_; // owned
 
 };
 

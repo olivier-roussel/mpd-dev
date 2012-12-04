@@ -82,15 +82,12 @@ public:
 
 	bool isPhysicsEngineSet() const;
 
-	const std::map<std::string, RigidBody*>& rigid_bodies() const;
-
 	PhysicsEngine* physics_engine_mutable();	// for debugging purpose
 
 private:
-  Environment* env_;								// owned
+  Environment* env_;								// owned by the physics engine
 	PhysicsEngine* physics_engine_;		// owned
 	PhysicsThread* physics_thread_;		// owned
-	std::map<std::string, RigidBody*> rigid_bodies_; // owned
 
 	unsigned int physics_time_step_ms_;
 

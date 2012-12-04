@@ -18,6 +18,7 @@
 **/
 
 #include "mpd/bullet_utils.h"
+#include "mpd/constants.h"
 
 btVector3 toBtVector3(const Eigen::Vector3d& i_v)
 {
@@ -63,3 +64,10 @@ btTransform toBtTransform(const Eigen::Affine3d& t)
 	return btTransform(toBtMatrix3(t.rotation()), toBtVector3(t.translation()));
 }
 
+Eigen::Affine3d toETransform(const btTransform& t)
+{
+	Eigen::Affine3d e_t(Eigen::Affine3d::Identity());
+	e_t.translate(toEVector3(t.getOrigin()));
+	e_t.rotate(toEQuaternion(t.getRotation()));
+	return e_t;
+}

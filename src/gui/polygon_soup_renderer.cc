@@ -38,3 +38,24 @@ void drawPolygonSoup(const PolygonSoup& soup, const Eigen::Vector4d& i_base_colo
   }
   glEnd();
 }
+
+void drawPolygonSoup(const PolygonSoup& soup, const Eigen::Affine3d& transform, const Eigen::Vector4d& i_base_color)
+{
+	std::vector<Eigen::Vector3d> transformed_verts(soup.verts().size());
+  for (size_t i = 0 ; i < soup.verts().size() ; ++i)
+		transformed_verts[i] = transform * soup.verts()[i];
+
+  glBegin(GL_TRIANGLES);
+  for (size_t i = 0 ; i < soup.tris().size() ; ++i)
+  {
+    const Triangle& t = soup.tris()[i];
+    double lum = 0.85;
+    if (soup.tris().size() == soup.normals().size())
+      lum = (2. + 1.3*soup.normals()[i].x() + 0.5*soup.normals()[i].y() + 0.8*soup.normals()[i].z()) / 4.;
+    glColor4d(lum * i_base_color[0], lum * i_base_color[1], lum * i_base_color[2], i_base_color[3]);
+    glVertex3dv(transformed_verts[t.get<0>()].data());
+    glVertex3dv(transformed_verts[t.get<1>()].data());
+    glVertex3dv(transformed_verts[t.get<2>()].data());
+  }
+  glEnd();
+}

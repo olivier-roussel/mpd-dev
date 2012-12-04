@@ -33,6 +33,7 @@ static const Eigen::Vector3d kGravity(0., 0., -9.8);
  *         |  1  0  0 |
  * Z_2_Y = |  0  0  1 |
  *         |  0 -1  0 |
+ * which is a rotation of -PI/2 arround X axis.
  */
 static const double Z_2_Y_data[] = {1, 0, 0, 0, 0, -1, 0, 1, 0};
  
@@ -43,6 +44,7 @@ static const Eigen::Matrix3d Z_2_Y_Matrix(Z_2_Y_data);
  *         |  1  0  0 |
  * Y_2_Z = |  0  0 -1 |
  *         |  0  1  0 |
+ * which is a rotation of PI/2 arround X axis.
  */ 
 static const double Y_2_Z_data[] = {1, 0, 0, 0, 0, 1, 0, -1, 0};
  

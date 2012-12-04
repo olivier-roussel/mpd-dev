@@ -25,14 +25,13 @@
 static const bool kUseQuantizedAabbCompression = true;
 
 BulletEngineWrapper::BulletEngineWrapper(MPDViewer* i_debug_physics_viewer) :
-  step_time_(0), is_init_(false), 
   collision_shapes_(), collision_config_(NULL), dispatcher_(NULL), overlapping_pair_cache_(NULL),
   solver_(NULL), dynamics_world_(NULL), 
   tris_indexes_arrays_(),
   bodies_verts_(),
   bodies_tris_(),
-  rigid_bodies_(),
-  soft_bodies_(),
+  bt_rigid_bodies_(),
+  bt_soft_bodies_(),
 	debug_physics_drawer_(NULL),
 	debug_physics_viewer_(i_debug_physics_viewer)
 {
@@ -45,8 +44,11 @@ BulletEngineWrapper::~BulletEngineWrapper()
 
 bool BulletEngineWrapper::init()
 {
-  if (!is_init_)
+  if (!is_init())
   {
+		if (!PhysicsEngine::init())
+			return false;
+
     //collision configuration contains default setup for memory, collision setup. Advanced users can create their own configuration.
     collision_config_= new btDefaultCollisionConfiguration();
 
@@ -74,16 +76,24 @@ bool BulletEngineWrapper::init()
 			dynamics_world_->setGravity(toBtVector3(Z_2_Y_Matrix * kGravity));
 		}
 
-    is_init_ = true;
+    set_is_init(true);
   }else
     return false; // already initialized
 }
 
 void BulletEngineWrapper::doOneStep(unsigned int i_step_time_ms)
 {
-  if (is_init_)
+  if (is_init())
 	{
     dynamics_world_->stepSimulation(static_cast<float>(i_step_time_ms *1.e-3f));
+
+		// update generic bodies transformations
+		for (std::map<std::string, BulletRigidBody>::iterator it_body = bt_rigid_bodies_.begin() ; it_body != bt_rigid_bodies_.end() ; ++it_body)
+		{
+			it_body->second.rigid_body->set_transform(Y_2_Z_Matrix * toETransform(it_body->second.bt_rigid_body->getWorldTransform()));
+		}
+
+		// TODO soft bodies
 
 		// debug drawing
 		{
@@ -97,17 +107,12 @@ void BulletEngineWrapper::doOneStep(unsigned int i_step_time_ms)
 void BulletEngineWrapper::enableGravity(bool i_enable_gravity)
 {
 	is_gravity_ = i_enable_gravity;
-	if (is_gravity_ && is_init_)
+	if (is_gravity_ && is_init())
 	{
 		dynamics_world_->setGravity(toBtVector3(Z_2_Y_Matrix * kGravity));
 		//m_softBodyWorldInfo.m_gravity.setValue(0,-9.8,0);
 		//m_softBodyWorldInfo.m_sparsesdf.Initialize();
 	}
-}
-
-bool BulletEngineWrapper::is_init()
-{
-	return is_init_;
 }
 
 void BulletEngineWrapper::quit()
@@ -146,6 +151,27 @@ void BulletEngineWrapper::quit()
     }
     bodies_tris_.clear();
 
+		// XXX fis this
+		for (std::map<std::string, BulletRigidBody>::iterator it = bt_rigid_bodies_.begin() ; it != bt_rigid_bodies_.end() ; ++it)
+    {
+			if (it->second.bt_rigid_body)
+			{
+        delete it->second.bt_rigid_body;
+				it->second.bt_rigid_body = NULL;
+			}
+    }
+		bt_rigid_bodies_.clear();
+
+		for (std::map<std::string, BulletSoftBody>::iterator it = bt_soft_bodies_.begin() ; it != bt_soft_bodies_.end() ; ++it)
+    {
+			if (it->second.bt_soft_body)
+			{
+        delete it->second.bt_soft_body;
+				it->second.bt_soft_body = NULL;
+			}
+    }
+		bt_soft_bodies_.clear();
+
     // Global bullet handlers
     if (dynamics_world_ )
     {
@@ -178,29 +204,39 @@ void BulletEngineWrapper::quit()
       delete debug_physics_drawer_;
 			debug_physics_drawer_ = NULL;
 		}
+
+		PhysicsEngine::quit();
+
     is_init_ = false;
   }
 }
 
-void BulletEngineWrapper::addDynamicRigidBody(const std::string& i_name, const RigidBody& i_rigid_body)
+bool BulletEngineWrapper::addDynamicRigidBody(const std::string& i_name, RigidBody* i_rigid_body)
 {
+	assert(is_init_ && "Trying to add static rigid body but Bullet physics is not initialized");
+	assert(i_rigid_body && "Trying to add uninitialized body to Bullet physics");
+
+	if (!PhysicsEngine::addDynamicRigidBody(i_name, i_rigid_body))
+		return false;
+
   // add polygon soup to bullet engine   
 	// Vertices
+	const PolygonSoup& soup = i_rigid_body->polygon_soup();
 	BulletBaseArray<btVector3>* verts = new BulletBaseArray<btVector3>();
-	verts->size = i_rigid_body.polygon_soup().verts().size();
-	verts->data = new btVector3[i_rigid_body.polygon_soup().verts().size()];
-	toBtVector3Array(i_rigid_body.polygon_soup().verts(), Z_2_Y_Matrix, verts->data);
+	verts->size = soup.verts().size();
+	verts->data = new btVector3[soup.verts().size()];
+	toBtVector3Array(soup.verts(), verts->data);
 
 	bodies_verts_.insert(std::make_pair(i_name, verts)); 
 
 	// Triangles
 	BulletBaseArray<int>* tris = new BulletBaseArray<int>();
-	tris->size = i_rigid_body.polygon_soup().tris().size()*3;
-	tris->data = new int[i_rigid_body.polygon_soup().tris().size()*3];
+	tris->size = soup.tris().size()*3;
+	tris->data = new int[soup.tris().size()*3];
 
-	for (size_t i = 0 ; i < i_rigid_body.polygon_soup().tris().size() ; ++i)
+	for (size_t i = 0 ; i < soup.tris().size() ; ++i)
 	{
-		const Triangle& t = i_rigid_body.polygon_soup().tris()[i];
+		const Triangle& t = soup.tris()[i];
 		tris->data[i*3 + 0] = t.get<0>();
 		tris->data[i*3 + 1] = t.get<1>();
 		tris->data[i*3 + 2] = t.get<2>();
@@ -217,46 +253,62 @@ void BulletEngineWrapper::addDynamicRigidBody(const std::string& i_name, const R
 	btConvexTriangleMeshShape* trimesh_shape = new btConvexTriangleMeshShape(tris_idx_array, true);
 	collision_shapes_.push_back(trimesh_shape);
 
-	btScalar mass(i_rigid_body.mass()); 
+	btScalar mass(i_rigid_body->mass()); 
 	btVector3 local_inertia;
 	trimesh_shape->calculateLocalInertia(mass, local_inertia);
 
-	btDefaultMotionState* motion_state = new btDefaultMotionState(toBtTransform(i_rigid_body.transform()));
+	btDefaultMotionState* motion_state = new btDefaultMotionState(toBtTransform(Z_2_Y_Matrix * i_rigid_body->transform()));
 	btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motion_state, trimesh_shape, local_inertia);
 	btRigidBody* body = new btRigidBody(rbInfo);
-	//btRigidBody* body = new btRigidBody(mass, 0, trimesh_shape, local_inertia);
 
 	//add the body to the dynamics world
 	dynamics_world_->addRigidBody(body);
+
+	// add body to bullet wrapper and generic engine
+	BulletRigidBody wrapped_body(body, i_rigid_body);
+	bt_rigid_bodies_.insert(std::make_pair(i_name, wrapped_body));
+
+	return true;
 }
 
-void BulletEngineWrapper::addDynamicSoftBody(const Eigen::Affine3d& i_transform)
-{
-  // TODO
-}
-
-void BulletEngineWrapper::addStaticRigidBody(const std::string& i_name,const RigidBody& i_rigid_body)
+bool BulletEngineWrapper::addDynamicSoftBody(const std::string& i_name/*, SoftBody* i_soft_body*/)
 {
 	assert(is_init_ && "Trying to add static rigid body but Bullet physics is not initialized");
-	assert(i_rigid_body.mass() == 0. && "Static bodies must have null mass");
+	//assert(i_soft_body && "Trying to add uninitialized body to Bullet physics");
+
+	//if (!PhysicsEngine::addDynamicSoftBody(i_name, i_soft_body))
+	//	return false;
+
+	return true;
+}
+
+bool BulletEngineWrapper::addStaticRigidBody(const std::string& i_name, RigidBody* i_rigid_body)
+{
+	assert(is_init_ && "Trying to add static rigid body but Bullet physics is not initialized");
+	assert(i_rigid_body && "Trying to add uninitialized body to Bullet physics");
+	assert(i_rigid_body->mass() == 0. && "Static bodies must have null mass");
+
+	if (!PhysicsEngine::addStaticRigidBody(i_name, i_rigid_body))
+		return false;
 
 	// add polygon soup to bullet engine   
 	// Vertices
+	const PolygonSoup& soup = i_rigid_body->polygon_soup();
 	BulletBaseArray<btVector3>* verts = new BulletBaseArray<btVector3>();
-	verts->size = i_rigid_body.polygon_soup().verts().size();
-	verts->data = new btVector3[i_rigid_body.polygon_soup().verts().size()];
-	toBtVector3Array(i_rigid_body.polygon_soup().verts(), Z_2_Y_Matrix, verts->data);
+	verts->size = soup.verts().size();
+	verts->data = new btVector3[soup.verts().size()];
+	toBtVector3Array(soup.verts(), verts->data);
 
 	bodies_verts_.insert(std::make_pair(i_name, verts)); 
 
 	// Triangles
 	BulletBaseArray<int>* tris = new BulletBaseArray<int>();
-	tris->size = i_rigid_body.polygon_soup().tris().size()*3;
-	tris->data = new int[i_rigid_body.polygon_soup().tris().size()*3];
+	tris->size = soup.tris().size()*3;
+	tris->data = new int[soup.tris().size()*3];
 
-	for (size_t i = 0 ; i < i_rigid_body.polygon_soup().tris().size() ; ++i)
+	for (size_t i = 0 ; i < soup.tris().size() ; ++i)
 	{
-		const Triangle& t = i_rigid_body.polygon_soup().tris()[i];
+		const Triangle& t = soup.tris()[i];
 		tris->data[i*3 + 0] = t.get<0>();
 		tris->data[i*3 + 1] = t.get<1>();
 		tris->data[i*3 + 2] = t.get<2>();
@@ -270,22 +322,26 @@ void BulletEngineWrapper::addStaticRigidBody(const std::string& i_name,const Rig
 
 	tris_indexes_arrays_.insert(std::make_pair(i_name, tris_idx_array));
 
-	btScalar mass(i_rigid_body.mass()); // rigid body is static -> mass must be 0
+	btScalar mass(i_rigid_body->mass()); // rigid body is static -> mass must be 0
 	btVector3 local_inertia(0., 0., 0.);
 
-	// get poly soup AABB in Bullet referential (Y up)
-	const AABB soup_aabb = i_rigid_body.polygon_soup().aabb();
-	btVector3 aabb_min = toBtVector3((Z_2_Y_Matrix * soup_aabb.bmin).cwiseMin(Z_2_Y_Matrix * soup_aabb.bmax));
-	btVector3 aabb_max = toBtVector3((Z_2_Y_Matrix * soup_aabb.bmin).cwiseMax(Z_2_Y_Matrix * soup_aabb.bmax));
+	// get poly soup AABB 
+	const AABB soup_aabb = soup.aabb();
+	const btVector3 aabb_min = toBtVector3(soup_aabb.bmin);
+	const btVector3 aabb_max = toBtVector3(soup_aabb.bmax);
 	btBvhTriangleMeshShape* trimesh_shape = new btBvhTriangleMeshShape(tris_idx_array, kUseQuantizedAabbCompression, aabb_min, aabb_max, true);
 	collision_shapes_.push_back(trimesh_shape);
 
-	btDefaultMotionState* motion_state = new btDefaultMotionState(toBtTransform(i_rigid_body.transform()));
+	btDefaultMotionState* motion_state = new btDefaultMotionState(toBtTransform(Z_2_Y_Matrix * i_rigid_body->transform()));
 	btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motion_state, trimesh_shape, local_inertia);
 	btRigidBody* body = new btRigidBody(rbInfo);
-	//btRigidBody* body = new btRigidBody(mass, 0, trimesh_shape, local_inertia);
 
 	//add the body to the dynamics world
 	dynamics_world_->addRigidBody(body);
-}
 
+	// add body to bullet wrapper and generic engine
+	BulletRigidBody wrapped_body(body, i_rigid_body);
+	bt_rigid_bodies_.insert(std::make_pair(i_name, wrapped_body));
+
+	return true;
+}

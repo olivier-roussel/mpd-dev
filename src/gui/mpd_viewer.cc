@@ -40,7 +40,6 @@ static const std::string kEnvDir = std::string(kShareDir) + "/resources/environm
 
 static const size_t kDebugDefaultPhysicsLinesToDraw = 4096;
 static const size_t kDebugDefaultPhysicsTextToDraw = 128;
-//static const Eigen::Vector3d kDebugLineColor(1., 0.75, 0.);
 static const Eigen::Vector3d kDebugTextColor(1., 0.5, 0.);
 
 MPDViewer::MPDViewer(const std::string& label, int width, int height, int fps_max, MPDController& mpd_controller):
@@ -64,21 +63,21 @@ void MPDViewer::isRenderingPhysics(bool i_is_rendering_physics)
 
 void MPDViewer::renderScene()
 {
-  const float radius = 2.f;
-  const float h = 5.f;
-//  drawCylinder(-radius, -radius, 0.f, radius, radius, h, Eigen::Vector4f(1.f, 0.f, 0.f, 0.2f));
-
-  // render axis
+  // render world referential
 	if (render_referential_)
 		renderReferential(Eigen::Vector3d::Zero(), 1.f, 2.f);
 
-  if (mpd_controller_.isEnvironmentSet())
-    drawPolygonSoup(mpd_controller_.environment().polygon_soup(), Eigen::Vector4d(1., 1., 1., 1.));
+  if (mpd_controller_.isEnvironmentSet())	// we know environement have an identity transform
+    drawPolygonSoup(mpd_controller_.environment().polygon_soup(), mpd_controller_.environment().transform(), Eigen::Vector4d(1., 1., 1., 1.));
 
-	// TODO
-	//for (std::map<std::string, RigidBody*>::const_iterator it_body = mpd_controller_.rigid_bodies().begin() ; it_body != mpd_controller_.rigid_bodies().end() ; ++it_body)
-	//	drawPolygonSoup(*(it_body->second), Eigen::Vector4d(1., 0.5, 0., 1.));
-
+	if (mpd_controller_.isPhysicsInitialized())
+	{
+		for (std::map<std::string, RigidBody*>::const_iterator it_body = mpd_controller_.physics_engine().rigid_bodies().begin() ; it_body != mpd_controller_.physics_engine().rigid_bodies().end() ; ++it_body)
+		{
+			//if (it_body->second->name() != mpd_controller_.environment().name)
+				drawPolygonSoup(it_body->second->polygon_soup(), it_body->second->transform(), Eigen::Vector4d(1., 0.5, 0., 1.));
+		}
+	}
 	// render physics (debug)
 	if (render_physics_)
 	{
@@ -137,7 +136,8 @@ void MPDViewer::handleGUI()
 	imguiSlider("Mass", &mass_next_object_, 0., 10., 0.1);
 	if (imguiButton("Add rigid box", mpd_controller_.isPhysicsInitialized()))
 	{
-		mpd_controller_.addRigidBox("box_" + boost::lexical_cast<std::string>(body_count_), mass_next_object_, Eigen::Affine3d::Identity());
+		Eigen::Affine3d box_t(Eigen::Affine3d::Identity());
+		mpd_controller_.addRigidBox("box_" + boost::lexical_cast<std::string>(body_count_), mass_next_object_, box_t);
 		++body_count_;
 	}
 
@@ -147,8 +147,6 @@ void MPDViewer::handleGUI()
 	const int display_menu_height = static_cast<int>(height() * kDisplayMenuHeightRatio) - 5;
 	if (imguiBeginScrollArea("Display options", width() - kMenuWidth-10, 0, kMenuWidth, display_menu_height, &display_scroll_)) 
     set_is_mouse_over_gui(true);
-	
-  //imguiLabel("Display options");
 
 	if (imguiCheck("Render physics", render_physics_))
 		render_physics_ = !render_physics_;
