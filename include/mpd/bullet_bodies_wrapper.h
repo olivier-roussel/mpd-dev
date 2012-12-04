@@ -21,6 +21,7 @@
 #define MPD_DEV_BULLET_BODIES_WRAPPER_H_
 
 #include "mpd/rigid_body.h"
+#include "mpd/soft_body.h"
 
 #include "btBulletDynamicsCommon.h"
 
@@ -36,10 +37,10 @@ struct BulletRigidBody
 struct BulletSoftBody
 {
 	btSoftBody* bt_soft_body;		// owned by bullet engine wrapper
-	//SoftBody* soft_body; // TODO	// owned by generic engine
+	SoftBody* soft_body;				// owned by generic engine
 
-	//	inline BulletSoftBody(btSoftBody* i_bt_soft_body, SoftBody* i_soft_body) : 
-	//bt_soft_body(i_bt_soft_body), soft_body(i_soft_body) {}
+		inline BulletSoftBody(btSoftBody* i_bt_soft_body, SoftBody* i_soft_body) : 
+	bt_soft_body(i_bt_soft_body), soft_body(i_soft_body) {}
 };
 
 #endif // MPD_DEV_BULLET_BODIES_WRAPPER_H_

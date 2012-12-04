@@ -28,10 +28,8 @@
 class Environment : public RigidBody
 {
 public:
-  Environment(const Eigen::Affine3d& i_transform);
+  Environment(const PolygonSoup& i_soup, const Eigen::Affine3d& i_transform);
   virtual ~Environment();
-
-  bool loadPolygonSoup(const boost::filesystem::path& path);
 
 };
 

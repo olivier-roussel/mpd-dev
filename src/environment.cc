@@ -19,15 +19,11 @@
 
 #include "mpd/environment.h"
 
-Environment::Environment(const Eigen::Affine3d& i_transform) : RigidBody(0., i_transform)
+Environment::Environment(const PolygonSoup& i_soup, const Eigen::Affine3d& i_transform): 
+RigidBody(i_soup, 0., i_transform)
 {
 }
 
 Environment::~Environment()
 {
-}
-
-bool Environment::loadPolygonSoup(const boost::filesystem::path& path)
-{
-  return m_geometry.loadFromFile(path);
 }

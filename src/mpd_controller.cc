@@ -64,9 +64,22 @@ const PhysicsEngine& MPDController::physics_engine() const
 
 bool MPDController::loadEnvironment(const boost::filesystem::path& path)
 {
-  if (!env_)
-		env_ = new Environment(Eigen::Affine3d::Identity());
-  return env_->loadPolygonSoup(path);
+  //if (!env_)
+		//env_ = new Environment(Eigen::Affine3d::Identity());
+  //return env_->loadPolygonSoup(path);
+
+	if (env_)
+	{
+		delete env_;
+		env_ = NULL;
+	}
+	PolygonSoup soup;
+	if (soup.loadFromFile(path))
+	{
+		env_ = new Environment(soup, Eigen::Affine3d::Identity());
+		return true;
+	}else
+		return false;
 }
 
 void MPDController::switchEnvironmentAxis()
@@ -177,40 +190,22 @@ void MPDController::addRigidBox(const std::string& i_name, double i_mass, const 
 {
 	assert (isPhysicsInitialized() && "cannot add rigid bodies if physics engine not initialized");
 
-	RigidBody* box_body = new RigidBody(i_mass, i_transform);
-	PolygonSoup& box_geom = box_body->polygon_soup_mutable();
+	const PolygonSoup box_geom = PolygonSoup::createBox(1.);
 
-	box_geom.addVertex(Eigen::Vector3d(-0.5, 0.5, 0.5));
-	box_geom.addVertex(Eigen::Vector3d(0.5, 0.5, 0.5));
-	box_geom.addVertex(Eigen::Vector3d(0.5, -0.5, 0.5));
-	box_geom.addVertex(Eigen::Vector3d(-0.5, -0.5, 0.5));
-	box_geom.addVertex(Eigen::Vector3d(-0.5, 0.5, -0.5));
-	box_geom.addVertex(Eigen::Vector3d(0.5, 0.5, -0.5));
-	box_geom.addVertex(Eigen::Vector3d(0.5, -0.5, -0.5));
-	box_geom.addVertex(Eigen::Vector3d(-0.5, -0.5, -0.5));
-
-	box_geom.addTriangle(Triangle(0, 3, 1));
-	box_geom.addTriangle(Triangle(1, 3, 2));
-
-	box_geom.addTriangle(Triangle(1, 2, 6));
-	box_geom.addTriangle(Triangle(1, 6, 5));
-
-	box_geom.addTriangle(Triangle(3, 7, 6));
-	box_geom.addTriangle(Triangle(3, 6, 2));
-
-	box_geom.addTriangle(Triangle(0, 4, 7));
-	box_geom.addTriangle(Triangle(0, 7, 3));
-
-	box_geom.addTriangle(Triangle(1, 5, 4));
-	box_geom.addTriangle(Triangle(1, 4, 0));
-
-	box_geom.addTriangle(Triangle(7, 4, 5));
-	box_geom.addTriangle(Triangle(7, 5, 6));
-
-	box_geom.computeAABB();
-	box_geom.computeTriangleNormals();
+	RigidBody* box_body = new RigidBody(box_geom, i_mass, i_transform);
 
 	physics_engine_->addDynamicRigidBody(i_name, box_body);
+}
+
+void MPDController::addSoftBox(const std::string& i_name, double i_mass, const Eigen::Affine3d& i_transform)
+{
+	assert (isPhysicsInitialized() && "cannot add soft bodies if physics engine not initialized");
+
+	const PolygonSoup box_geom = PolygonSoup::createBox(1.);
+	std::vector<double> nodes_masses(box_geom.verts().size(), 0.);
+	SoftBody* box_body = new SoftBody(box_geom, i_mass, nodes_masses, i_transform);
+
+	physics_engine_->addDynamicSoftBody(i_name, box_body);
 }
 
 void MPDController::setPhysicsDebugDrawer(MPDViewer* i_viewer)

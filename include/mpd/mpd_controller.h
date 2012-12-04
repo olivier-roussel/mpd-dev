@@ -66,6 +66,13 @@ public:
 	*/
 	void addRigidBox(const std::string& i_name, double i_mass, const Eigen::Affine3d& i_transform);
 
+		/**
+	*
+	* \pre Physics must have been initialized.
+	*/
+	void addSoftBox(const std::string& i_name, double i_mass, const Eigen::Affine3d& i_transform);
+
+
 	/**
 	* Accessors
 	*/

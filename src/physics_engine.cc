@@ -40,6 +40,16 @@ void PhysicsEngine::quit()
 		}
 	}
 	rigid_bodies_.clear();
+
+	for (std::map<std::string, SoftBody*>::iterator it_bodies = soft_bodies_.begin() ; it_bodies != soft_bodies_.end() ; ++it_bodies)
+	{
+		if (it_bodies->second)
+		{
+			delete it_bodies->second;
+			it_bodies->second = NULL;
+		}
+	}
+	soft_bodies_.clear();
 }
 
 bool PhysicsEngine::init()
@@ -51,6 +61,12 @@ const std::map<std::string, RigidBody*>& PhysicsEngine::rigid_bodies() const
 {
 	return rigid_bodies_;
 }
+
+const std::map<std::string, SoftBody*>& PhysicsEngine::soft_bodies() const
+{
+	return soft_bodies_;
+}
+
 
 bool PhysicsEngine::addStaticRigidBody(const std::string& i_name, RigidBody* i_rigid_body)
 {
@@ -72,10 +88,14 @@ bool PhysicsEngine::addDynamicRigidBody(const std::string& i_name, RigidBody* i_
 		return false;
 }
 
-bool PhysicsEngine::addDynamicSoftBody(const std::string& i_name/*, SoftBody* i_soft_body*/)
+bool PhysicsEngine::addDynamicSoftBody(const std::string& i_name, SoftBody* i_soft_body)
 {
-	// TODO
-	return true;
+	if (soft_bodies_.find(i_name) == soft_bodies_.end())
+	{
+		soft_bodies_.insert(std::make_pair(i_name, i_soft_body));
+		return true;
+	}else
+		return false;
 }
 
 void PhysicsEngine::set_is_init(bool i_is_init)

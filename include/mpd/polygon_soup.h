@@ -26,7 +26,8 @@
 
 #include "mpd/types.h"
 
-class PolygonSoup {
+class PolygonSoup 
+{
 public:
   
   enum SupportedFileFormats_t {
@@ -88,6 +89,12 @@ public:
   bool isEmpty() const;
 
   const AABB& aabb() const;
+
+	/**
+	* Static methods
+	*/
+
+	static PolygonSoup createBox(double size);
   
 private:
   std::vector<Eigen::Vector3d> verts_;      // Vertices array

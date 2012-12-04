@@ -23,6 +23,7 @@
 #include <map>
 #include <Eigen/Geometry>
 #include "mpd/rigid_body.h"
+#include "mpd/soft_body.h"
 
 class PolygonSoup;
 
@@ -85,7 +86,7 @@ public:
 	/**
 	* \warning Inherited classes that reimplements this method should call PhysicsEngine::addDynamicSoftBody() at first during their own addDynamicSoftBody().
 	*/
-  virtual bool addDynamicSoftBody(const std::string& i_name/*, SoftBody* i_soft_body*/); // TODO
+  virtual bool addDynamicSoftBody(const std::string& i_name, SoftBody* i_soft_body); 
 
 	virtual void enableGravity(bool i_enable_gravity) = 0;
 
@@ -102,6 +103,8 @@ public:
 	//virtual const std::map<std::string, Eigen::Affine3d> getRigidBodiesWorldTransform() const = 0;
 
 	const std::map<std::string, RigidBody*>& rigid_bodies() const;
+
+	const std::map<std::string, SoftBody*>& soft_bodies() const;
 
 	bool is_init() const;
 
@@ -122,6 +125,7 @@ protected:
 	*/
   bool is_init_;
 	std::map<std::string, RigidBody*> rigid_bodies_; // owned
+	std::map<std::string, SoftBody*> soft_bodies_; // owned
 
 };
 

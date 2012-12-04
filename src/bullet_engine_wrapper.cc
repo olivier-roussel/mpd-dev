@@ -21,6 +21,8 @@
 #include "mpd/constants.h"
 #include "bullet_debug_drawer.h"
 #include <boost/thread/mutex.hpp>
+#include "BulletSoftBody/btSoftBodyHelpers.h"
+#include "BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h"
 
 static const bool kUseQuantizedAabbCompression = true;
 
@@ -33,7 +35,8 @@ BulletEngineWrapper::BulletEngineWrapper(MPDViewer* i_debug_physics_viewer) :
   bt_rigid_bodies_(),
   bt_soft_bodies_(),
 	debug_physics_drawer_(NULL),
-	debug_physics_viewer_(i_debug_physics_viewer)
+	debug_physics_viewer_(i_debug_physics_viewer),
+	world_soft_config_()
 {
 }
 
@@ -50,19 +53,27 @@ bool BulletEngineWrapper::init()
 			return false;
 
     //collision configuration contains default setup for memory, collision setup. Advanced users can create their own configuration.
-    collision_config_= new btDefaultCollisionConfiguration();
+    collision_config_= new btSoftBodyRigidBodyCollisionConfiguration();
 
     //use the default collision dispatcher. For parallel processing you can use a diffent dispatcher (see Extras/BulletMultiThreaded)
     dispatcher_= new btCollisionDispatcher(collision_config_);
 
     //btDbvtBroadphase is a good general purpose broadphase. You can also try out btAxis3Sweep.
-    overlapping_pair_cache_ = new btDbvtBroadphase();
+		btVector3 worldMin(-200, -200, -200);	// XXX 
+		btVector3 worldMax(200, 200, 200);
+    overlapping_pair_cache_ = new bt32BitAxisSweep3(worldMin, worldMax, 30000);
+		//overlapping_pair_cache_ = new btDbvtBroadphase();
 
     //the default constraint solver. For parallel processing you can use a different solver (see Extras/BulletMultiThreaded)
-    solver_ = new btSequentialImpulseConstraintSolver;
+    solver_ = new btSequentialImpulseConstraintSolver();
 
-    dynamics_world_ = new btDiscreteDynamicsWorld(dispatcher_, overlapping_pair_cache_, solver_, collision_config_);
+    dynamics_world_ = new btSoftRigidDynamicsWorld(dispatcher_, overlapping_pair_cache_, solver_, collision_config_);
   
+		// soft bodies configuration
+		world_soft_config_.m_sparsesdf.Initialize();
+		world_soft_config_.m_dispatcher = dispatcher_;
+		world_soft_config_.m_broadphase = overlapping_pair_cache_;
+
 		// if a viewer as been given for physics debug rendering, associate a bullet physics renderer 
 		if (debug_physics_viewer_)
 		{
@@ -74,6 +85,7 @@ bool BulletEngineWrapper::init()
 		if (is_gravity_)
 		{
 			dynamics_world_->setGravity(toBtVector3(Z_2_Y_Matrix * kGravity));
+			world_soft_config_.m_gravity = toBtVector3(Z_2_Y_Matrix * kGravity);
 		}
 
     set_is_init(true);
@@ -205,6 +217,8 @@ void BulletEngineWrapper::quit()
 			debug_physics_drawer_ = NULL;
 		}
 
+		world_soft_config_ = btSoftBodyWorldInfo();
+
 		PhysicsEngine::quit();
 
     is_init_ = false;
@@ -237,9 +251,9 @@ bool BulletEngineWrapper::addDynamicRigidBody(const std::string& i_name, RigidBo
 	for (size_t i = 0 ; i < soup.tris().size() ; ++i)
 	{
 		const Triangle& t = soup.tris()[i];
-		tris->data[i*3 + 0] = t.get<0>();
-		tris->data[i*3 + 1] = t.get<1>();
-		tris->data[i*3 + 2] = t.get<2>();
+		tris->data[i*3 + 0] = t[0];
+		tris->data[i*3 + 1] = t[1];
+		tris->data[i*3 + 2] = t[2];
 	}
 
 	bodies_tris_.insert(std::make_pair(i_name, tris));
@@ -271,13 +285,81 @@ bool BulletEngineWrapper::addDynamicRigidBody(const std::string& i_name, RigidBo
 	return true;
 }
 
-bool BulletEngineWrapper::addDynamicSoftBody(const std::string& i_name/*, SoftBody* i_soft_body*/)
+bool BulletEngineWrapper::addDynamicSoftBody(const std::string& i_name, SoftBody* i_soft_body)
 {
 	assert(is_init_ && "Trying to add static rigid body but Bullet physics is not initialized");
-	//assert(i_soft_body && "Trying to add uninitialized body to Bullet physics");
+	assert(i_soft_body && "Trying to add uninitialized body to Bullet physics");
 
-	//if (!PhysicsEngine::addDynamicSoftBody(i_name, i_soft_body))
-	//	return false;
+	if (!PhysicsEngine::addDynamicSoftBody(i_name, i_soft_body))
+		return false;
+
+	unsigned int nnodes = i_soft_body->nb_nodes();
+
+	const PolygonSoup& soup = i_soft_body->polygon_soup();
+	btAlignedObjectArray<btVector3> verts;
+	verts.resize(nnodes);
+	for (size_t i = 0 ; i < nnodes ; ++i)
+	{
+		const Eigen::Vector3d& v = soup.verts()[i];
+		verts[i] = toBtVector3(v);
+	}
+
+	btSoftBody* body = new btSoftBody(&world_soft_config_, nnodes, &verts[0], 0);
+
+	int ntris = static_cast<int>(soup.tris().size());
+	btAlignedObjectArray<bool> chks;
+	chks.resize(nnodes * nnodes, false);
+	for (size_t i = 0 ; i < ntris ; ++i)
+	{
+		const Triangle& tri = soup.tris()[i];
+		for (int prevk = 2, k = 0 ; k < 3 ; prevk = k++)
+		{
+			if (!chks[tri[k] * nnodes + tri[prevk]])
+			{
+				chks[tri[k] * nnodes + tri[prevk]] = true;
+				chks[tri[prevk] * nnodes + tri[k]] = true;
+				body->appendLink(tri[prevk], tri[k]);
+			}
+		}
+		body->appendFace(tri[0], tri[1], tri[2]);
+	}
+
+	//int* tris = new int[ntris*3]; // try deleting alloc here OR_DEBUG
+	//for (size_t i = 0 ; i < ntris ; ++i)
+	//{
+	//	const Triangle& t = soup.tris()[i];
+	//	tris[i*3+0] = t.get<0>();
+	//	tris[i*3+1] = t.get<1>();
+	//	tris[i*3+2] = t.get<2>();
+	//}
+
+
+	//btSoftBody*	body = btSoftBodyHelpers::CreateFromTriMesh(world_soft_config_, verts, tris, ntris);
+
+	// define soft body material
+	btSoftBody::Material*	material = body->appendMaterial();
+	material->m_kLST = 0.3;
+	material->m_kAST = 0.2;
+	material->m_kVST = 0.5;
+
+	body->generateBendingConstraints(2, material);
+	body->m_cfg.piterations =	2;
+	body->m_cfg.collisions = btSoftBody::fCollision::SDF_RS+
+		btSoftBody::fCollision::CL_SS +
+		btSoftBody::fCollision::CL_SELF;
+
+	body->m_cfg.kDF = 0.5;
+	body->randomizeConstraints();
+	body->transform(toBtTransform(Z_2_Y_Matrix * i_soft_body->transform()));
+	body->setTotalMass(i_soft_body->mass(), true);
+	body->generateClusters(16);	
+
+	//add the body to the dynamics world
+	dynamics_world_->addSoftBody(body);
+
+		// add body to bullet wrapper and generic engine
+	BulletSoftBody wrapped_body(body, i_soft_body);
+	bt_soft_bodies_.insert(std::make_pair(i_name, wrapped_body));
 
 	return true;
 }
@@ -309,9 +391,9 @@ bool BulletEngineWrapper::addStaticRigidBody(const std::string& i_name, RigidBod
 	for (size_t i = 0 ; i < soup.tris().size() ; ++i)
 	{
 		const Triangle& t = soup.tris()[i];
-		tris->data[i*3 + 0] = t.get<0>();
-		tris->data[i*3 + 1] = t.get<1>();
-		tris->data[i*3 + 2] = t.get<2>();
+		tris->data[i*3 + 0] = t[0];
+		tris->data[i*3 + 1] = t[1];
+		tris->data[i*3 + 2] = t[2];
 	}
 
 	bodies_tris_.insert(std::make_pair(i_name, tris));

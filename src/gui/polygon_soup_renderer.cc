@@ -32,9 +32,9 @@ void drawPolygonSoup(const PolygonSoup& soup, const Eigen::Vector4d& i_base_colo
     if (soup.tris().size() == soup.normals().size())
       lum = (2. + 1.3*soup.normals()[i].x() + 0.5*soup.normals()[i].y() + 0.8*soup.normals()[i].z()) / 4.;
     glColor4d(lum * i_base_color[0], lum * i_base_color[1], lum * i_base_color[2], i_base_color[3]);
-    glVertex3dv(soup.verts()[t.get<0>()].data());
-    glVertex3dv(soup.verts()[t.get<1>()].data());
-    glVertex3dv(soup.verts()[t.get<2>()].data());
+    glVertex3dv(soup.verts()[t[0]].data());
+    glVertex3dv(soup.verts()[t[1]].data());
+    glVertex3dv(soup.verts()[t[2]].data());
   }
   glEnd();
 }
@@ -53,9 +53,9 @@ void drawPolygonSoup(const PolygonSoup& soup, const Eigen::Affine3d& transform, 
     if (soup.tris().size() == soup.normals().size())
       lum = (2. + 1.3*soup.normals()[i].x() + 0.5*soup.normals()[i].y() + 0.8*soup.normals()[i].z()) / 4.;
     glColor4d(lum * i_base_color[0], lum * i_base_color[1], lum * i_base_color[2], i_base_color[3]);
-    glVertex3dv(transformed_verts[t.get<0>()].data());
-    glVertex3dv(transformed_verts[t.get<1>()].data());
-    glVertex3dv(transformed_verts[t.get<2>()].data());
+    glVertex3dv(transformed_verts[t[0]].data());
+    glVertex3dv(transformed_verts[t[1]].data());
+    glVertex3dv(transformed_verts[t[2]].data());
   }
   glEnd();
 }

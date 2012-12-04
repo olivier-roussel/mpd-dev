@@ -27,6 +27,7 @@
 #include "btBulletDynamicsCommon.h"
 #include "btBulletCollisionCommon.h"
 #include "BulletSoftBody/btSoftBody.h"
+#include "BulletSoftBody/btSoftRigidDynamicsWorld.h"
 
 #include "mpd/physics_engine.h"
 #include "mpd/bullet_utils.h"
@@ -62,7 +63,7 @@ public:
 	*/
   bool addDynamicRigidBody(const std::string& i_name, RigidBody* i_rigid_body);
 
-  bool addDynamicSoftBody(const std::string& i_name/*, SoftBody* i_soft_body*/);
+  bool addDynamicSoftBody(const std::string& i_name, SoftBody* i_soft_body);
 
 	void enableGravity(bool i_enable_gravity);
 
@@ -80,9 +81,10 @@ private:
   std::vector<btCollisionShape*> 	 collision_shapes_;
   btDefaultCollisionConfiguration* collision_config_;
   btCollisionDispatcher* dispatcher_;
-  btBroadphaseInterface* overlapping_pair_cache_;
+  bt32BitAxisSweep3* overlapping_pair_cache_;
   btSequentialImpulseConstraintSolver* solver_; // TODO check if solver appropriated
-  btDiscreteDynamicsWorld* dynamics_world_;
+  btSoftRigidDynamicsWorld* dynamics_world_;
+	btSoftBodyWorldInfo	world_soft_config_;
 
   std::map<std::string, btTriangleIndexVertexArray*> tris_indexes_arrays_;
   std::map<std::string, BulletBaseArray<btVector3>* > bodies_verts_;

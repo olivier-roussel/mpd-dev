@@ -133,7 +133,7 @@ bool PolygonSoup::loadFromObj(const boost::filesystem::path& filename)
         vert_indexes.push_back(vert_index);
       }
       for (size_t i = 2 ; i < vert_indexes.size() ; ++i)
-        tris_.push_back(boost::make_tuple(vert_indexes[0], vert_indexes[i-1], vert_indexes[i]));
+        tris_.push_back(Triangle(vert_indexes[0], vert_indexes[i-1], vert_indexes[i]));
     }
   }
   file.close();
@@ -146,7 +146,7 @@ bool PolygonSoup::loadFromObj(const boost::filesystem::path& filename)
 void PolygonSoup::invertTriangles()
 {
   for (size_t i = 0  ; i < tris_.size() ; ++i)
-    std::swap(tris_[i].get<1>(), tris_[i].get<2>());
+    std::swap(tris_[i][1], tris_[i][2]);
 }
 
 void PolygonSoup::clear()
@@ -216,12 +216,49 @@ void PolygonSoup::computeTriangleNormals()
   normals_.reserve(tris_.size());
   for (size_t i = 0 ; i < tris_.size() ; ++i)
   {
-    const Eigen::Vector3d& v0 = verts_[tris_[i].get<0>()];
-    const Eigen::Vector3d& v1 = verts_[tris_[i].get<1>()];
-    const Eigen::Vector3d& v2 = verts_[tris_[i].get<2>()];
+		const Triangle& tri = tris_[i];
+    const Eigen::Vector3d& v0 = verts_[tri[0]];
+    const Eigen::Vector3d& v1 = verts_[tri[1]];
+    const Eigen::Vector3d& v2 = verts_[tri[2]];
     const Eigen::Vector3d e0(v1 - v0), e1(v2 - v0);
     const Eigen::Vector3d n = e0.cross(e1).normalized();
     normals_.push_back(n);
   }
 }
 
+PolygonSoup PolygonSoup::createBox(double size)
+{
+	PolygonSoup box_geom;
+	const double half_size = size * 0.5;
+	box_geom.addVertex(Eigen::Vector3d(-half_size, half_size, half_size));
+	box_geom.addVertex(Eigen::Vector3d(half_size, half_size, half_size));
+	box_geom.addVertex(Eigen::Vector3d(half_size, -half_size, half_size));
+	box_geom.addVertex(Eigen::Vector3d(-half_size, -half_size, half_size));
+	box_geom.addVertex(Eigen::Vector3d(-half_size, half_size, -half_size));
+	box_geom.addVertex(Eigen::Vector3d(half_size, half_size, -half_size));
+	box_geom.addVertex(Eigen::Vector3d(half_size, -half_size, -half_size));
+	box_geom.addVertex(Eigen::Vector3d(-half_size, -half_size, -half_size));
+
+	box_geom.addTriangle(Triangle(0, 3, 1));
+	box_geom.addTriangle(Triangle(1, 3, 2));
+
+	box_geom.addTriangle(Triangle(1, 2, 6));
+	box_geom.addTriangle(Triangle(1, 6, 5));
+
+	box_geom.addTriangle(Triangle(3, 7, 6));
+	box_geom.addTriangle(Triangle(3, 6, 2));
+
+	box_geom.addTriangle(Triangle(0, 4, 7));
+	box_geom.addTriangle(Triangle(0, 7, 3));
+
+	box_geom.addTriangle(Triangle(1, 5, 4));
+	box_geom.addTriangle(Triangle(1, 4, 0));
+
+	box_geom.addTriangle(Triangle(7, 4, 5));
+	box_geom.addTriangle(Triangle(7, 5, 6));
+
+	box_geom.computeAABB();
+	box_geom.computeTriangleNormals();
+
+	return box_geom;
+}

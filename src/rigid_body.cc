@@ -19,7 +19,8 @@
 
 #include "mpd/rigid_body.h"
 
-RigidBody::RigidBody(double i_mass, const Eigen::Affine3d& i_tranform) :
+RigidBody::RigidBody(const PolygonSoup& i_soup, double i_mass, const Eigen::Affine3d& i_tranform):
+	m_geometry(i_soup),
 	m_mass(i_mass),
 	m_transform(i_tranform)
 {
@@ -30,11 +31,6 @@ RigidBody::~RigidBody()
 }
 
 const PolygonSoup& RigidBody::polygon_soup() const
-{
-	return m_geometry;
-}
-
-PolygonSoup& RigidBody::polygon_soup_mutable()
 {
 	return m_geometry;
 }

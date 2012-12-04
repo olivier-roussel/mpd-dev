@@ -17,17 +17,19 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#ifndef MPD_DEV_RIGID_BODY_H_
-#define MPD_DEV_RIGID_BODY_H_
+#ifndef MPD_DEV_SOFT_BODY_H_
+#define MPD_DEV_SOFT_BODY_H_
 
 #include <Eigen/Geometry>
 #include "mpd/polygon_soup.h"
 
-class RigidBody
+// TODO still a lot to complete here
+
+class SoftBody
 {
 public:
-	RigidBody(const PolygonSoup& i_soup, double i_mass, const Eigen::Affine3d& i_tranform);
-	virtual ~RigidBody();
+	SoftBody(const PolygonSoup& i_stable_geom, double i_total_mass, const std::vector<double>& i_nodes_masses, const Eigen::Affine3d& i_tranform);
+	virtual ~SoftBody();
 
 	void switchPolygonSoupAxis();
 
@@ -35,18 +37,25 @@ public:
 
 	const PolygonSoup& polygon_soup() const;
 
-	//PolygonSoup& polygon_soup_mutable();	// XXX should be in constructor instead
-
 	const Eigen::Affine3d& transform() const;
 
 	void set_transform(const Eigen::Affine3d& i_transform);
 
 	double mass() const;
 
+	const std::vector<Eigen::Vector3d>& verts_deformations() const;
+
+	std::vector<Eigen::Vector3d>& verts_deformations_mutable();
+
+	unsigned int nb_nodes() const;
+
 protected:
-	double m_mass;
-	PolygonSoup m_geometry;	
+	std::vector<double> m_nodes_masses;
+	double m_total_mass;
+	PolygonSoup m_stable_geom;	
 	Eigen::Affine3d m_transform;
+	std::vector<Eigen::Vector3d> m_verts_deformations;
+	unsigned int m_nb_nodes;
 };
 
-#endif // MPD_DEV_RIGID_BODY_H_
+#endif // MPD_DEV_SOFT_BODY_H_

@@ -137,7 +137,14 @@ void MPDViewer::handleGUI()
 	if (imguiButton("Add rigid box", mpd_controller_.isPhysicsInitialized()))
 	{
 		Eigen::Affine3d box_t(Eigen::Affine3d::Identity());
-		mpd_controller_.addRigidBox("box_" + boost::lexical_cast<std::string>(body_count_), mass_next_object_, box_t);
+		mpd_controller_.addRigidBox("rigid_box_" + boost::lexical_cast<std::string>(body_count_), mass_next_object_, box_t);
+		++body_count_;
+	}
+
+	if (imguiButton("Add soft box", mpd_controller_.isPhysicsInitialized()))
+	{
+		Eigen::Affine3d box_t(Eigen::Affine3d::Identity());
+		mpd_controller_.addSoftBox("soft_box_" + boost::lexical_cast<std::string>(body_count_), mass_next_object_, box_t);
 		++body_count_;
 	}
 

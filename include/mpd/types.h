@@ -20,12 +20,14 @@
 #ifndef MPD_DEV_TYPES_H_
 #define MPD_DEV_TYPES_H_
 
-#include <boost/tuple/tuple.hpp>
+#include "mpd/triplet.h"
 #include <Eigen/Core>
 
-typedef boost::tuple<unsigned int, unsigned int, unsigned int> Triangle;
+//typedef boost::tuple<unsigned int, unsigned int, unsigned int> Triangle;
+typedef UniformTriplet<unsigned int> Triangle;
 
-struct AABB {
+struct AABB 
+{
   Eigen::Vector3d bmin;
   Eigen::Vector3d bmax;
 };
