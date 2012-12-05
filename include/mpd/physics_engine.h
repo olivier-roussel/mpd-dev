@@ -77,33 +77,6 @@ public:
 	* ------------------------------------
 	*/
 
-	///**
-	//* \warning Inherited classes that reimplements this method should call PhysicsEngine::init() at first during their own init().
-	//*/
- // virtual bool init();
-
-
-	///**
-	//* \warning Inherited classes that reimplements this method should call PhysicsEngine::quit() at end during their own quit().
-	//*/
- // virtual void quit();
-
-	///**
-	//* \warning Inherited classes that reimplements this method should call PhysicsEngine::addStaticRigidBody() at first during their own addStaticRigidBody().
-	//*/
-	//virtual bool addStaticRigidBody(const std::string& i_name, RigidBody* i_rigid_body);
-
-	///**
-	//* \warning Inherited classes that reimplements this method should call PhysicsEngine::addDynamicRigidBody() at first during their own addDynamicRigidBody().
-	//*/
-	//virtual bool addDynamicRigidBody(const std::string& i_name, RigidBody* i_rigid_body); 
-
-	///**
-	//* \warning Inherited classes that reimplements this method should call PhysicsEngine::addDynamicSoftBody() at first during their own addDynamicSoftBody().
-	//*/
- // virtual bool addDynamicSoftBody(const std::string& i_name, SoftBody* i_soft_body); 
-
-
 	/**
 	* ------------------------------------
 	* Accessors
@@ -123,6 +96,16 @@ public:
 	bool is_init() const;
 
 	unsigned int niter() const;
+
+	/**
+	* \brief Returns the last procedeed step cpu time in milliseconds.
+	*/
+	double last_step_cpu_time() const;
+
+	/**
+	* \brief Returns the last procedeed step simulation time in milliseconds.
+	*/
+	double last_step_simulation_time() const;
 
 protected:
 	/**
@@ -146,6 +129,9 @@ protected:
 
 	std::map<std::string, RigidBody*> rigid_bodies_; // owned
 	std::map<std::string, SoftBody*> soft_bodies_;	// owned
+
+	double last_step_simu_time_;
+	double last_step_cpu_time_;
 
 protected:
 

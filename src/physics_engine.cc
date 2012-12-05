@@ -18,10 +18,13 @@
 **/
 
 #include "mpd/physics_engine.h"
+#include "mpd/timer.h"
 
 PhysicsEngine::PhysicsEngine() :
 	is_init_(false),
-	is_gravity_(false)
+	is_gravity_(false),
+	last_step_simu_time_(0.),
+	last_step_cpu_time_(0.)
 {
 }
 
@@ -47,6 +50,8 @@ void PhysicsEngine::_cleanup()
 	is_init_ = false;
 	is_gravity_ = false;
 	niter_ = 0;
+	last_step_simu_time_ = 0.;
+	last_step_cpu_time_ = 0.;
 
 	for (std::map<std::string, RigidBody*>::iterator it_bodies = rigid_bodies_.begin() ; it_bodies != rigid_bodies_.end() ; ++it_bodies)
 	{
@@ -92,8 +97,16 @@ void PhysicsEngine::doOneStep(unsigned int i_step_time_ms)
 {
 	assert(is_init_ && "Cannot step physics engine as it is not initialized");
 
+	TimeVal start_step = getPerfTime();
+
 	// call implemented _doOneStep()
 	_doOneStep(i_step_time_ms);
+
+	const int step_cpu_time_us = getPerfDeltaTimeUsec(start_step, getPerfTime());
+
+	last_step_cpu_time_ = static_cast<double>(step_cpu_time_us * 1.e-3);
+	last_step_simu_time_ = static_cast<double>(i_step_time_ms);
+	++niter_;
 }
 
 
@@ -171,5 +184,15 @@ const std::map<std::string, RigidBody*>& PhysicsEngine::rigid_bodies() const
 const std::map<std::string, SoftBody*>& PhysicsEngine::soft_bodies() const
 {
 	return soft_bodies_;
+}
+
+double PhysicsEngine::last_step_cpu_time() const
+{
+	return last_step_cpu_time_;
+}
+
+double PhysicsEngine::last_step_simulation_time() const
+{
+	return last_step_simu_time_;
 }
 

@@ -42,6 +42,9 @@ static const std::string kBodiesDir = std::string(kShareDir) + "/resources/bodie
 static const size_t kDebugDefaultPhysicsLinesToDraw = 4096;
 static const size_t kDebugDefaultPhysicsTextToDraw = 128;
 static const Eigen::Vector3d kDebugTextColor(1., 0.5, 0.);
+static const Eigen::Vector4f kHistoPhysicsColor(0., 0.8, 1., 1.);
+static const Eigen::Vector4f kHistoGraphicsColor(0., 1., 0., 1.);
+
 static const double kBodyFallingHeight = 5.;
 
 MPDViewer::MPDViewer(const std::string& label, int width, int height, int fps_max, MPDController& mpd_controller):
@@ -52,9 +55,18 @@ MPDViewer::MPDViewer(const std::string& label, int width, int height, int fps_ma
   mpd_controller_(mpd_controller), physics_debug_lines_(), 
 	render_physics_(true), render_referential_(true),
 	mass_next_object_(1.), body_count_(0), menu_popup_y_(0),
-	current_contextual_menu_(MPDViewer::CTM_NONE)
+	current_contextual_menu_(MPDViewer::CTM_NONE),
+	physics_histogram_(1), graphics_histogram_(1),
+	physics_histo_last_step_(0)
 	{
 		physics_debug_lines_.reserve(kDebugDefaultPhysicsLinesToDraw);
+
+		std::vector<Eigen::Vector4f> color_set_histo;
+		color_set_histo.push_back(kHistoPhysicsColor);
+		physics_histogram_.setColorSet(color_set_histo);
+		color_set_histo.clear();
+		color_set_histo.push_back(kHistoGraphicsColor);
+		graphics_histogram_.setColorSet(color_set_histo);
 	}
 
 MPDViewer::~MPDViewer()
@@ -186,6 +198,7 @@ void MPDViewer::handleGUI()
   imguiEndScrollArea();
 	// end of main menu
 
+	// display options
 	const int display_menu_height = static_cast<int>(height() * kDisplayMenuHeightRatio) - 5;
 	if (imguiBeginScrollArea("Display options", width() - kMenuWidth-10, 0, kMenuWidth, display_menu_height, &display_scroll_)) 
     set_is_mouse_over_gui(true);
@@ -200,6 +213,9 @@ void MPDViewer::handleGUI()
 		set_render_mode(static_cast<RenderingMode_t>((static_cast<int>(render_mode()) + 1) % static_cast<int>(RM_NB_RENDERING_MODES)));
 
   imguiEndScrollArea();
+
+	// perfs infos
+	
 
   // display environments filelist if opened
   if (current_contextual_menu_ == MPDViewer::CTM_ENV_FROM_MESH)
@@ -295,6 +311,22 @@ void MPDViewer::handleGUI()
   imguiEndFrame();
   imguiRenderGLDraw();
 
+	 // Rendering histogram over GUI
+	// first check if they need an update of records
+	if (mpd_controller_.isPhysicsInitialized() && mpd_controller_.physics_engine().niter() != physics_histo_last_step_)
+	{
+		physics_histo_last_step_ = mpd_controller_.physics_engine().niter();
+		const double normalized_last_step_cpu_time = mpd_controller_.physics_engine().last_step_cpu_time() / mpd_controller_.physics_engine().last_step_simulation_time();
+		physics_histogram_.addMeasure(static_cast<float>(normalized_last_step_cpu_time));
+	}
+	glPushMatrix();
+	glTranslatef(10, height() - 10 - physics_histogram_.getHeight(), 0);
+	physics_histogram_.render();
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(10 + physics_histogram_.getWidth() + 10, height() - 10 - physics_histogram_.getHeight(), 0);
+	graphics_histogram_.render();
+	glPopMatrix();
 }
 
 void MPDViewer::addPhysicsLine(const Eigen::Vector3d& i_from, const Eigen::Vector3d& i_to, const Eigen::Vector3d& i_color)

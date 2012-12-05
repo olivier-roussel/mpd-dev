@@ -22,6 +22,7 @@
 
 #include "gui/gl_viewer.h"
 #include "mpd/algorithm.h"
+#include "gui/perf_histogram.h"
 
 #include <boost/filesystem/path.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -91,7 +92,9 @@ private:
   std::vector<boost::filesystem::path> env_files_;  // env models files
   std::vector<boost::filesystem::path> bodies_files_;  // bodies models files
 
-
+	PerformanceHistogram physics_histogram_;
+	PerformanceHistogram graphics_histogram_;
+	unsigned int physics_histo_last_step_;
 
 	/**
 	* Debug drawing attributes for physics

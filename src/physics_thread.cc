@@ -74,7 +74,7 @@ void PhysicsThread::_run()
 
 void PhysicsThread::_update()
 {
-  physics_engine_->doOneStep(static_cast<double>(loop_time_ms_ * 10e3));
+  physics_engine_->doOneStep(static_cast<double>(loop_time_ms_));
 
   // schedule next update excepted if is_done() condition not reached
   if (!is_done())
