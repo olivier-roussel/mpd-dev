@@ -44,8 +44,6 @@ public:
 	
 	void quitPhysics();
 
-	void setPhysicsTimeStep(unsigned int i_physics_time_step_ms);
-
   bool loadEnvironment(const boost::filesystem::path& path);
 
   void switchEnvironmentAxis();
@@ -66,12 +64,23 @@ public:
 	*/
 	void addRigidBox(const std::string& i_name, double i_mass, const Eigen::Affine3d& i_transform);
 
-		/**
+	/**
 	*
 	* \pre Physics must have been initialized.
 	*/
 	void addSoftBox(const std::string& i_name, double i_mass, const Eigen::Affine3d& i_transform);
 
+	/**
+	*
+	* \pre Physics must have been initialized.
+	*/
+	bool addRigidBodyFromMeshFile(const std::string& i_name, const boost::filesystem::path& path, double i_mass, const Eigen::Affine3d& i_transform);
+
+	/**
+	*
+	* \pre Physics must have been initialized.
+	*/
+	bool addSoftBodyFromMeshFile(const std::string& i_name, const boost::filesystem::path& path, double i_mass, const Eigen::Affine3d& i_transform);
 
 	/**
 	* Accessors
@@ -83,7 +92,9 @@ public:
 
 	const PhysicsEngine& physics_engine() const;
 
-	unsigned int physics_time_step_ms() const;
+	unsigned int physics_time_step() const;
+
+	void set_physics_time_step(unsigned int i_physics_time_step_ms);
 
   bool isEnvironmentSet() const;
 

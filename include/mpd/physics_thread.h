@@ -23,7 +23,7 @@
 #include <boost/thread.hpp>
 #include <boost/asio.hpp>
 
-#include "mpd/physics_engine.h"
+class PhysicsEngine;
 
 /**
  * \class PhysicsThread

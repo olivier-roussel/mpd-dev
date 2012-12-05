@@ -104,12 +104,12 @@ bool MPDController::isPhysicsEngineSet() const
   return physics_engine_ != NULL;
 }
 
-unsigned int MPDController::physics_time_step_ms() const
+unsigned int MPDController::physics_time_step() const
 {
 	return physics_time_step_ms_;
 }
 
-void MPDController::setPhysicsTimeStep(unsigned int i_physics_time_step_ms)
+void MPDController::set_physics_time_step(unsigned int i_physics_time_step_ms)
 {
 	physics_time_step_ms_ = i_physics_time_step_ms;
 }
@@ -206,6 +206,37 @@ void MPDController::addSoftBox(const std::string& i_name, double i_mass, const E
 	SoftBody* box_body = new SoftBody(box_geom, i_mass, nodes_masses, i_transform);
 
 	physics_engine_->addDynamicSoftBody(i_name, box_body);
+}
+
+bool MPDController::addRigidBodyFromMeshFile(const std::string& i_name, const boost::filesystem::path& path, double i_mass, const Eigen::Affine3d& i_transform)
+{
+	assert (isPhysicsInitialized() && "cannot add rigid bodies if physics engine not initialized");
+
+	PolygonSoup soup;
+	if (soup.loadFromFile(path))
+	{
+		RigidBody* body = new RigidBody(soup, i_mass, i_transform);
+
+		physics_engine_->addDynamicRigidBody(i_name, body);
+		return true;
+	}else
+		return false;
+}
+
+bool MPDController::addSoftBodyFromMeshFile(const std::string& i_name, const boost::filesystem::path& path, double i_mass, const Eigen::Affine3d& i_transform)
+{
+	assert (isPhysicsInitialized() && "cannot add rigid bodies if physics engine not initialized");
+
+	PolygonSoup soup;
+	if (soup.loadFromFile(path))
+	{
+		std::vector<double> nodes_masses(soup.verts().size(), 0.);
+		SoftBody* body = new SoftBody(soup, i_mass, nodes_masses, i_transform);
+
+		physics_engine_->addDynamicSoftBody(i_name, body);
+		return true;
+	}else
+		return false;
 }
 
 void MPDController::setPhysicsDebugDrawer(MPDViewer* i_viewer)

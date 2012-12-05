@@ -47,36 +47,28 @@ class BulletEngineWrapper : public PhysicsEngine
 
 public:
   BulletEngineWrapper(MPDViewer* i_debug_physics_viewer = NULL);
-  ~BulletEngineWrapper();
+  virtual ~BulletEngineWrapper();
 
-  bool init();
+protected:
+  bool _init();
 
-  void doOneStep(unsigned int i_step_time_ms);
-
-  void quit();
+  void _quit();
 
 	// XXX so far, only add once ! TODO add possibility to add many static objects
-  bool addStaticRigidBody(const std::string& i_name, RigidBody* i_rigid_body); 
+  bool _addStaticRigidBody(const std::string& i_name, RigidBody* i_rigid_body); 
 
 	/**
 	* \pre Body must be convex
 	*/
-  bool addDynamicRigidBody(const std::string& i_name, RigidBody* i_rigid_body);
+  bool _addDynamicRigidBody(const std::string& i_name, RigidBody* i_rigid_body);
 
-  bool addDynamicSoftBody(const std::string& i_name, SoftBody* i_soft_body);
+  bool _addDynamicSoftBody(const std::string& i_name, SoftBody* i_soft_body);
 
-	void enableGravity(bool i_enable_gravity);
+	bool _enableGravity(bool i_enable_gravity);
 
-	//const std::pair<bool, Eigen::Affine3d> getRigidBodyWorldTransform(const std::string& i_name) const;
-
-	//const std::map<std::string, Eigen::Affine3d> getRigidBodiesWorldTransform() const;
-
-	//const Eigen::Affine3d getSoftBodyWorldTransform(const std::string& i_name) const;
-
-	//const std::map<std::string, Eigen::Affine3d> getSoftBodiesWorldTransform() const;
+  void _doOneStep(unsigned int i_step_time_ms);
 
 private:
-	bool is_gravity_;
 
   std::vector<btCollisionShape*> 	 collision_shapes_;
   btDefaultCollisionConfiguration* collision_config_;

@@ -37,18 +37,22 @@ static const float kDisplayMenuHeightRatio = 0.25f;
 static const int kFileSelectorHeight = 300;
 static const int kFileSelectorWidth = 250;
 static const std::string kEnvDir = std::string(kShareDir) + "/resources/environments/";
+static const std::string kBodiesDir = std::string(kShareDir) + "/resources/bodies/";
 
 static const size_t kDebugDefaultPhysicsLinesToDraw = 4096;
 static const size_t kDebugDefaultPhysicsTextToDraw = 128;
 static const Eigen::Vector3d kDebugTextColor(1., 0.5, 0.);
+static const double kBodyFallingHeight = 5.;
 
 MPDViewer::MPDViewer(const std::string& label, int width, int height, int fps_max, MPDController& mpd_controller):
   GLViewer(label, width, height, fps_max),
-  main_scroll_(0), display_scroll_(0), is_show_algos_(false), algo_(MPA_KPIECE_OMPL), 
-  is_show_envs_(false), env_scroll_(0), env_name_("Pick from file..."), env_files_(),
+  main_scroll_(0), display_scroll_(0), algo_(MPA_KPIECE_OMPL), 
+  //is_show_envs_(false), is_show_rigid_bodies_(false), is_show_soft_bodies_(false), is_show_algos_(false), 
+	env_scroll_(0), env_name_("Pick from file..."), env_files_(),
   mpd_controller_(mpd_controller), physics_debug_lines_(), 
 	render_physics_(true), render_referential_(true),
-	mass_next_object_(1.), body_count_(0)
+	mass_next_object_(1.), body_count_(0), menu_popup_y_(0),
+	current_contextual_menu_(MPDViewer::CTM_NONE)
 	{
 		physics_debug_lines_.reserve(kDebugDefaultPhysicsLinesToDraw);
 	}
@@ -109,11 +113,11 @@ void MPDViewer::handleGUI()
   imguiLabel("Environment");
   if (imguiButton(env_name_.c_str()))
   {
-    is_show_envs_ = !is_show_envs_;
-    if (is_show_envs_)
+    current_contextual_menu_ = current_contextual_menu_ == MPDViewer::CTM_ENV_FROM_MESH ? MPDViewer::CTM_NONE : MPDViewer::CTM_ENV_FROM_MESH;
+    if (current_contextual_menu_ == MPDViewer::CTM_ENV_FROM_MESH)
     {
       env_files_ = listDirectory(kEnvDir, ".obj", false);
-//      for (size_t i = 0 ; i < PolygonSoup::SFF_NB_SUPPORTED_FORMATS ; ++i)
+			menu_popup_y_ =  mouse_pos().y();
     }
   }
   if (imguiButton("Switch Y/Z axis", mpd_controller_.isEnvironmentSet()))
@@ -128,15 +132,24 @@ void MPDViewer::handleGUI()
 	if (imguiButton("Start", mpd_controller_.isEnvironmentSet() && !mpd_controller_.isPhysicsInitialized()))
 		mpd_controller_.initPhysics(PhysicsEngine::PE_BULLET);
 
+	double phy_time_step = static_cast<double>(mpd_controller_.physics_time_step());
+	imguiSlider("Physics time step", &phy_time_step, 1., 100., 1.);
+	unsigned int new_phy_time_step = static_cast<unsigned int>(phy_time_step);
+	if (new_phy_time_step != mpd_controller_.physics_time_step())
+		mpd_controller_.set_physics_time_step(new_phy_time_step);
+
   imguiLabel("Algorithm");
   if (imguiButton(getMotionPlanningAlgorithmName(algo_).c_str()))
-    is_show_algos_ = !is_show_algos_;
+	{
+    current_contextual_menu_ = current_contextual_menu_ == MPDViewer::CTM_MP_ALGO_SELECT ? MPDViewer::CTM_NONE : MPDViewer::CTM_MP_ALGO_SELECT;
+	}
   imguiSeparator();
 
 	imguiSlider("Mass", &mass_next_object_, 0., 10., 0.1);
 	if (imguiButton("Add rigid box", mpd_controller_.isPhysicsInitialized()))
 	{
 		Eigen::Affine3d box_t(Eigen::Affine3d::Identity());
+		box_t.translate(Eigen::Vector3d(0., 0., kBodyFallingHeight));			// add body falling from the sky :)
 		mpd_controller_.addRigidBox("rigid_box_" + boost::lexical_cast<std::string>(body_count_), mass_next_object_, box_t);
 		++body_count_;
 	}
@@ -144,10 +157,32 @@ void MPDViewer::handleGUI()
 	if (imguiButton("Add soft box", mpd_controller_.isPhysicsInitialized()))
 	{
 		Eigen::Affine3d box_t(Eigen::Affine3d::Identity());
+		box_t.translate(Eigen::Vector3d(0., 0., kBodyFallingHeight));			// add body falling from the sky :)
 		mpd_controller_.addSoftBox("soft_box_" + boost::lexical_cast<std::string>(body_count_), mass_next_object_, box_t);
 		++body_count_;
 	}
 
+	// add rigid body from mesh file
+	if (imguiButton("Add rigid body from mesh", mpd_controller_.isPhysicsInitialized()))
+  {
+    current_contextual_menu_ = current_contextual_menu_ == MPDViewer::CTM_RIGID_BODY_FROM_MESH ? MPDViewer::CTM_NONE : MPDViewer::CTM_RIGID_BODY_FROM_MESH;
+    if (current_contextual_menu_ == MPDViewer::CTM_RIGID_BODY_FROM_MESH)
+		{
+      bodies_files_ = listDirectory(kBodiesDir, ".obj", false);
+			menu_popup_y_ =  mouse_pos().y();
+		}
+  }
+
+	// add soft body from mesh file
+	if (imguiButton("Add soft body from mesh", mpd_controller_.isPhysicsInitialized()))
+  {
+    current_contextual_menu_ = current_contextual_menu_ == MPDViewer::CTM_SOFT_BODY_FROM_MESH ? MPDViewer::CTM_NONE : MPDViewer::CTM_SOFT_BODY_FROM_MESH;
+    if (current_contextual_menu_ == MPDViewer::CTM_SOFT_BODY_FROM_MESH)
+		{
+      bodies_files_ = listDirectory(kBodiesDir, ".obj", false);
+			menu_popup_y_ =  mouse_pos().y();
+		}
+  }
   imguiEndScrollArea();
 	// end of main menu
 
@@ -167,9 +202,9 @@ void MPDViewer::handleGUI()
   imguiEndScrollArea();
 
   // display environments filelist if opened
-  if (is_show_envs_)
+  if (current_contextual_menu_ == MPDViewer::CTM_ENV_FROM_MESH)
   {
-    if (imguiBeginScrollArea("Select environment file", width()-10-kMenuWidth-10-kFileSelectorWidth, height()-10-kFileSelectorHeight - 40, kFileSelectorWidth, kFileSelectorHeight, &env_scroll_))
+    if (imguiBeginScrollArea("Select environment file", width()-10-kMenuWidth-10-kFileSelectorWidth, menu_popup_y_ - kFileSelectorHeight, kFileSelectorWidth, kFileSelectorHeight, &env_scroll_))
       set_is_mouse_over_gui(true);
     int env_to_load = -1;
     for (int i = 0; i < env_files_.size() && env_to_load < 0; ++i)
@@ -180,24 +215,81 @@ void MPDViewer::handleGUI()
     if (env_to_load != -1)
     {
       env_name_ = env_files_[env_to_load].filename().string();
-      if (!mpd_controller_.loadEnvironment(env_files_[env_to_load]))
-        std::cout << "Could not load environment from " << env_name_ << std::endl;
-      else{
-        std::cout << "env loaded! nverts=" << mpd_controller_.environment().polygon_soup().verts().size() << " / nfaces=" << mpd_controller_.environment().polygon_soup().tris().size() << " / normals= " << mpd_controller_.environment().polygon_soup().normals().size() << std::endl;
-        // update camera & fog to mesh bounds
+      if (mpd_controller_.loadEnvironment(env_files_[env_to_load]))
+			{
+				std::cout << "[PROGRESS] Loaded environment: nverts = " << mpd_controller_.environment().polygon_soup().verts().size() << " / nfaces = " << mpd_controller_.environment().polygon_soup().tris().size() << " / normals = " << mpd_controller_.environment().polygon_soup().normals().size() << std::endl;
+				// update camera & fog to mesh bounds
 				const AABB env_aabb = mpd_controller_.environment().polygon_soup().aabb();
-        set_far_clip(static_cast<float>((env_aabb.bmax - env_aabb.bmin).norm() * 0.5));
-        set_camera_pos((env_aabb.bmax + env_aabb.bmin).cast<float>()/ 2.f + Eigen::Vector3f::Identity()*far_clip());
-        set_far_clip(far_clip() * 20);
-        set_rot(Eigen::Vector2f(-45.f, -135.f));
-        //set_rot(Eigen::Vector2f(45.f, 45.f));
-        glFogf(GL_FOG_START, far_clip()*0.2f);
-        glFogf(GL_FOG_END, far_clip()*1.25f);
-       }
-       is_show_envs_ = false;
+				set_far_clip(static_cast<float>((env_aabb.bmax - env_aabb.bmin).norm() * 0.5));
+				set_camera_pos((env_aabb.bmax + env_aabb.bmin).cast<float>()/ 2.f + Eigen::Vector3f::Identity()*far_clip());
+				set_far_clip(far_clip() * 20);
+				set_rot(Eigen::Vector2f(-45.f, -135.f));
+				//set_rot(Eigen::Vector2f(45.f, 45.f));
+				glFogf(GL_FOG_START, far_clip()*0.2f);
+				glFogf(GL_FOG_END, far_clip()*1.25f);
+			}else
+        std::cout << "[ERROR] Could not load environment from " << env_name_ << std::endl;
+
+			current_contextual_menu_ = MPDViewer::CTM_NONE;
     }
     imguiEndScrollArea();
   }
+
+	// add rigid body from file menu
+	if (current_contextual_menu_ == MPDViewer::CTM_RIGID_BODY_FROM_MESH)
+	{
+		if (imguiBeginScrollArea("Select rigid body mesh", width()-10-kMenuWidth-10-kFileSelectorWidth, menu_popup_y_ - kFileSelectorHeight, kFileSelectorWidth, kFileSelectorHeight, &env_scroll_))
+      set_is_mouse_over_gui(true);
+		int mesh_to_load = -1;
+		for (int i = 0; i < bodies_files_.size() && mesh_to_load < 0; ++i)
+    {
+      if (imguiItem(bodies_files_[i].filename().string().c_str()))
+        mesh_to_load = i;
+    }
+		if (mesh_to_load != -1)
+    {
+			const std::string body_name = "body_" + boost::lexical_cast<std::string>(body_count_++);
+
+			Eigen::Affine3d body_t(Eigen::Affine3d::Identity());
+			body_t.translate(Eigen::Vector3d(0., 0., kBodyFallingHeight));			// add body falling from the sky :)
+			if (mpd_controller_.addRigidBodyFromMeshFile(body_name, bodies_files_[mesh_to_load], mass_next_object_, body_t))
+        std::cout << "[PROGRESS] Rigid body added from mesh " << bodies_files_[mesh_to_load].filename().string() << ": nverts = " << mpd_controller_.environment().polygon_soup().verts().size() << 
+				" / ntris = " << mpd_controller_.environment().polygon_soup().tris().size() << std::endl;
+			else
+        std::cout << "[ERROR] Could not load rigid body mesh from file " << bodies_files_[mesh_to_load].filename().string() << std::endl;
+
+			current_contextual_menu_ = MPDViewer::CTM_NONE;
+		}
+    imguiEndScrollArea();
+	}
+
+	// add soft body from file menu
+	if (current_contextual_menu_ == MPDViewer::CTM_SOFT_BODY_FROM_MESH)
+	{
+		if (imguiBeginScrollArea("Select soft body mesh", width()-10-kMenuWidth-10-kFileSelectorWidth, menu_popup_y_ - kFileSelectorHeight, kFileSelectorWidth, kFileSelectorHeight, &env_scroll_))
+      set_is_mouse_over_gui(true);
+		int mesh_to_load = -1;
+		for (int i = 0; i < bodies_files_.size() && mesh_to_load < 0; ++i)
+    {
+      if (imguiItem(bodies_files_[i].filename().string().c_str()))
+        mesh_to_load = i;
+    }
+		if (mesh_to_load != -1)
+    {
+			const std::string body_name = "body_" + boost::lexical_cast<std::string>(body_count_++);
+
+			Eigen::Affine3d body_t(Eigen::Affine3d::Identity());
+			body_t.translate(Eigen::Vector3d(0., 0., kBodyFallingHeight));			// add body falling from the sky :)
+			if (mpd_controller_.addSoftBodyFromMeshFile(body_name, bodies_files_[mesh_to_load], mass_next_object_, body_t))
+        std::cout << "[PROGRESS] Soft body added from mesh " << bodies_files_[mesh_to_load].filename().string() << ": nverts = " << mpd_controller_.environment().polygon_soup().verts().size() << 
+				" / ntris = " << mpd_controller_.environment().polygon_soup().tris().size() << std::endl;
+			else
+        std::cout << "[ERROR] Could not load soft body mesh from file " << bodies_files_[mesh_to_load].filename().string() << std::endl;
+
+			current_contextual_menu_ = MPDViewer::CTM_NONE;
+		}
+    imguiEndScrollArea();
+	}
 
   // end of GUI main frame
   imguiEndFrame();

@@ -19,6 +19,8 @@
 
 #include "mpd/physics_thread.h"
 
+#include "mpd/physics_engine.h"
+
 PhysicsThread::PhysicsThread(PhysicsEngine* i_physics_engine) : 
   is_done_(true),
   physics_engine_(i_physics_engine),

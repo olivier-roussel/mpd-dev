@@ -29,6 +29,7 @@
 
 class MPDController;
 
+
 class MPDViewer : public GLViewer 
 {
 public:
@@ -52,6 +53,8 @@ public:
 
 	boost::mutex& getPhysicsObjectsMutex();
 
+
+
 private:
 
 	bool render_physics_;					// true if viewer must render physics
@@ -69,13 +72,26 @@ private:
   void renderScene();
   void handleGUI();
 
+	enum ContextualMenu_t
+	{
+		CTM_NONE = 0,
+		CTM_ENV_FROM_MESH,
+		CTM_RIGID_BODY_FROM_MESH,
+		CTM_SOFT_BODY_FROM_MESH,
+		CTM_MP_ALGO_SELECT,
+		CTM_NB_CONTEXTUAL_MENUS
+	};
+
+	int menu_popup_y_;
   int env_scroll_;
-  bool is_show_envs_;
-  bool is_show_algos_;          // true if algo selection menu visible
+	ContextualMenu_t current_contextual_menu_;
 	double mass_next_object_;			// mass of next object to be added
 	int body_count_;							// number of bodies in the scene (excepted environment)
 
   std::vector<boost::filesystem::path> env_files_;  // env models files
+  std::vector<boost::filesystem::path> bodies_files_;  // bodies models files
+
+
 
 	/**
 	* Debug drawing attributes for physics

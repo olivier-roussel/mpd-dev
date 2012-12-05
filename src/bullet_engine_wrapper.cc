@@ -42,197 +42,158 @@ BulletEngineWrapper::BulletEngineWrapper(MPDViewer* i_debug_physics_viewer) :
 
 BulletEngineWrapper::~BulletEngineWrapper()
 {
-  quit();
+  _quit();
 }
 
-bool BulletEngineWrapper::init()
+bool BulletEngineWrapper::_init()
 {
-  if (!is_init())
-  {
-		if (!PhysicsEngine::init())
-			return false;
 
-    //collision configuration contains default setup for memory, collision setup. Advanced users can create their own configuration.
-    collision_config_= new btSoftBodyRigidBodyCollisionConfiguration();
+	//collision configuration contains default setup for memory, collision setup. Advanced users can create their own configuration.
+	collision_config_= new btSoftBodyRigidBodyCollisionConfiguration();
 
-    //use the default collision dispatcher. For parallel processing you can use a diffent dispatcher (see Extras/BulletMultiThreaded)
-    dispatcher_= new btCollisionDispatcher(collision_config_);
+	//use the default collision dispatcher. For parallel processing you can use a diffent dispatcher (see Extras/BulletMultiThreaded)
+	dispatcher_= new btCollisionDispatcher(collision_config_);
 
-    //btDbvtBroadphase is a good general purpose broadphase. You can also try out btAxis3Sweep.
-		btVector3 worldMin(-200, -200, -200);	// XXX 
-		btVector3 worldMax(200, 200, 200);
-    overlapping_pair_cache_ = new bt32BitAxisSweep3(worldMin, worldMax, 30000);
-		//overlapping_pair_cache_ = new btDbvtBroadphase();
+	//btDbvtBroadphase is a good general purpose broadphase. You can also try out btAxis3Sweep.
+	btVector3 worldMin(-200, -200, -200);	// XXX 
+	btVector3 worldMax(200, 200, 200);
+	overlapping_pair_cache_ = new bt32BitAxisSweep3(worldMin, worldMax, 30000);
+	//overlapping_pair_cache_ = new btDbvtBroadphase();
 
-    //the default constraint solver. For parallel processing you can use a different solver (see Extras/BulletMultiThreaded)
-    solver_ = new btSequentialImpulseConstraintSolver();
+	//the default constraint solver. For parallel processing you can use a different solver (see Extras/BulletMultiThreaded)
+	solver_ = new btSequentialImpulseConstraintSolver();
 
-    dynamics_world_ = new btSoftRigidDynamicsWorld(dispatcher_, overlapping_pair_cache_, solver_, collision_config_);
-  
-		// soft bodies configuration
-		world_soft_config_.m_sparsesdf.Initialize();
-		world_soft_config_.m_dispatcher = dispatcher_;
-		world_soft_config_.m_broadphase = overlapping_pair_cache_;
+	dynamics_world_ = new btSoftRigidDynamicsWorld(dispatcher_, overlapping_pair_cache_, solver_, collision_config_);
 
-		// if a viewer as been given for physics debug rendering, associate a bullet physics renderer 
-		if (debug_physics_viewer_)
-		{
-			debug_physics_drawer_ = new BulletDebugDrawer(debug_physics_viewer_);
-			dynamics_world_->setDebugDrawer(debug_physics_drawer_);
-			debug_physics_drawer_->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
-		}
+	// soft bodies configuration
+	world_soft_config_.m_sparsesdf.Initialize();
+	world_soft_config_.m_dispatcher = dispatcher_;
+	world_soft_config_.m_broadphase = overlapping_pair_cache_;
 
-		if (is_gravity_)
-		{
-			dynamics_world_->setGravity(toBtVector3(Z_2_Y_Matrix * kGravity));
-			world_soft_config_.m_gravity = toBtVector3(Z_2_Y_Matrix * kGravity);
-		}
-
-    set_is_init(true);
-  }else
-    return false; // already initialized
-}
-
-void BulletEngineWrapper::doOneStep(unsigned int i_step_time_ms)
-{
-  if (is_init())
+	// if a viewer as been given for physics debug rendering, associate a bullet physics renderer 
+	if (debug_physics_viewer_)
 	{
-    dynamics_world_->stepSimulation(static_cast<float>(i_step_time_ms *1.e-3f));
-
-		// update generic bodies transformations
-		for (std::map<std::string, BulletRigidBody>::iterator it_body = bt_rigid_bodies_.begin() ; it_body != bt_rigid_bodies_.end() ; ++it_body)
-		{
-			it_body->second.rigid_body->set_transform(Y_2_Z_Matrix * toETransform(it_body->second.bt_rigid_body->getWorldTransform()));
-		}
-
-		// TODO soft bodies
-
-		// debug drawing
-		{
-			boost::mutex::scoped_lock lock(debug_physics_drawer_->getPhysicsObjectsMutex());
-			debug_physics_drawer_->clearDraws();
-			dynamics_world_->debugDrawWorld();
-		}
+		debug_physics_drawer_ = new BulletDebugDrawer(debug_physics_viewer_);
+		dynamics_world_->setDebugDrawer(debug_physics_drawer_);
+		debug_physics_drawer_->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
 	}
+
+	if (is_gravity_)
+	{
+		dynamics_world_->setGravity(toBtVector3(Z_2_Y_Matrix * kGravity));
+		world_soft_config_.m_gravity = toBtVector3(Z_2_Y_Matrix * kGravity);
+	}
+
+	return true;
 }
 
-void BulletEngineWrapper::enableGravity(bool i_enable_gravity)
+bool BulletEngineWrapper::_enableGravity(bool i_enable_gravity)
 {
-	is_gravity_ = i_enable_gravity;
 	if (is_gravity_ && is_init())
 	{
 		dynamics_world_->setGravity(toBtVector3(Z_2_Y_Matrix * kGravity));
 		//m_softBodyWorldInfo.m_gravity.setValue(0,-9.8,0);
 		//m_softBodyWorldInfo.m_sparsesdf.Initialize();
-	}
-}
-
-void BulletEngineWrapper::quit()
-{
-  if (is_init_)
-  {
-    // Release bodies data
-    for (std::map<std::string, btTriangleIndexVertexArray*>::iterator it = tris_indexes_arrays_.begin() ; it != tris_indexes_arrays_.end() ; ++it)
-    {
-      if (it->second)
-        delete it->second;
-    }
-    tris_indexes_arrays_.clear();
-
-		for (std::map<std::string, BulletBaseArray<btVector3>* >::iterator it = bodies_verts_.begin() ; it != bodies_verts_.end() ; ++it)
-    {
-			if (it->second->data)
-			{
-        delete [] it->second->data;
-				it->second->data = NULL;
-			}
-			delete it->second;
-			it->second = NULL;
-    }
-    bodies_verts_.clear();
-
-		for (std::map<std::string, BulletBaseArray<int>* >::iterator it = bodies_tris_.begin() ; it != bodies_tris_.end() ; ++it)
-    {
-			if (it->second->data)
-			{
-        delete [] it->second->data;
-				it->second->data = NULL;
-			}
-			delete it->second;
-			it->second = NULL;
-    }
-    bodies_tris_.clear();
-
-		// XXX fis this
-		for (std::map<std::string, BulletRigidBody>::iterator it = bt_rigid_bodies_.begin() ; it != bt_rigid_bodies_.end() ; ++it)
-    {
-			if (it->second.bt_rigid_body)
-			{
-        delete it->second.bt_rigid_body;
-				it->second.bt_rigid_body = NULL;
-			}
-    }
-		bt_rigid_bodies_.clear();
-
-		for (std::map<std::string, BulletSoftBody>::iterator it = bt_soft_bodies_.begin() ; it != bt_soft_bodies_.end() ; ++it)
-    {
-			if (it->second.bt_soft_body)
-			{
-        delete it->second.bt_soft_body;
-				it->second.bt_soft_body = NULL;
-			}
-    }
-		bt_soft_bodies_.clear();
-
-    // Global bullet handlers
-    if (dynamics_world_ )
-    {
-      delete dynamics_world_ ;
-      dynamics_world_ = NULL;
-    }
-    if (solver_ )
-    {
-      delete solver_ ;
-      solver_ = NULL;
-    }
-    if (overlapping_pair_cache_)
-    {
-      delete overlapping_pair_cache_;
-      overlapping_pair_cache_= NULL;
-    }
-    if (dispatcher_)
-    {
-      delete overlapping_pair_cache_;
-      overlapping_pair_cache_= NULL;
-    }
-    if (collision_config_)
-    {
-      delete collision_config_;
-      collision_config_ = NULL;
-    }
-
-		if (debug_physics_drawer_)
-		{
-      delete debug_physics_drawer_;
-			debug_physics_drawer_ = NULL;
-		}
-
-		world_soft_config_ = btSoftBodyWorldInfo();
-
-		PhysicsEngine::quit();
-
-    is_init_ = false;
-  }
-}
-
-bool BulletEngineWrapper::addDynamicRigidBody(const std::string& i_name, RigidBody* i_rigid_body)
-{
-	assert(is_init_ && "Trying to add static rigid body but Bullet physics is not initialized");
-	assert(i_rigid_body && "Trying to add uninitialized body to Bullet physics");
-
-	if (!PhysicsEngine::addDynamicRigidBody(i_name, i_rigid_body))
+		return true;
+	}else
 		return false;
+}
 
+void BulletEngineWrapper::_quit()
+{
+
+	// Release bodies data
+	for (std::map<std::string, btTriangleIndexVertexArray*>::iterator it = tris_indexes_arrays_.begin() ; it != tris_indexes_arrays_.end() ; ++it)
+	{
+		if (it->second)
+			delete it->second;
+	}
+	tris_indexes_arrays_.clear();
+
+	for (std::map<std::string, BulletBaseArray<btVector3>* >::iterator it = bodies_verts_.begin() ; it != bodies_verts_.end() ; ++it)
+	{
+		if (it->second->data)
+		{
+			delete [] it->second->data;
+			it->second->data = NULL;
+		}
+		delete it->second;
+		it->second = NULL;
+	}
+	bodies_verts_.clear();
+
+	for (std::map<std::string, BulletBaseArray<int>* >::iterator it = bodies_tris_.begin() ; it != bodies_tris_.end() ; ++it)
+	{
+		if (it->second->data)
+		{
+			delete [] it->second->data;
+			it->second->data = NULL;
+		}
+		delete it->second;
+		it->second = NULL;
+	}
+	bodies_tris_.clear();
+
+	// XXX fis this
+	for (std::map<std::string, BulletRigidBody>::iterator it = bt_rigid_bodies_.begin() ; it != bt_rigid_bodies_.end() ; ++it)
+	{
+		if (it->second.bt_rigid_body)
+		{
+			delete it->second.bt_rigid_body;
+			it->second.bt_rigid_body = NULL;
+		}
+	}
+	bt_rigid_bodies_.clear();
+
+	for (std::map<std::string, BulletSoftBody>::iterator it = bt_soft_bodies_.begin() ; it != bt_soft_bodies_.end() ; ++it)
+	{
+		if (it->second.bt_soft_body)
+		{
+			delete it->second.bt_soft_body;
+			it->second.bt_soft_body = NULL;
+		}
+	}
+	bt_soft_bodies_.clear();
+
+	// Global bullet handlers
+	if (dynamics_world_ )
+	{
+		delete dynamics_world_ ;
+		dynamics_world_ = NULL;
+	}
+	if (solver_ )
+	{
+		delete solver_ ;
+		solver_ = NULL;
+	}
+	if (overlapping_pair_cache_)
+	{
+		delete overlapping_pair_cache_;
+		overlapping_pair_cache_= NULL;
+	}
+	if (dispatcher_)
+	{
+		delete overlapping_pair_cache_;
+		overlapping_pair_cache_= NULL;
+	}
+	if (collision_config_)
+	{
+		delete collision_config_;
+		collision_config_ = NULL;
+	}
+
+	if (debug_physics_drawer_)
+	{
+		delete debug_physics_drawer_;
+		debug_physics_drawer_ = NULL;
+	}
+
+	world_soft_config_ = btSoftBodyWorldInfo();
+
+}
+
+bool BulletEngineWrapper::_addDynamicRigidBody(const std::string& i_name, RigidBody* i_rigid_body)
+{
   // add polygon soup to bullet engine   
 	// Vertices
 	const PolygonSoup& soup = i_rigid_body->polygon_soup();
@@ -285,14 +246,8 @@ bool BulletEngineWrapper::addDynamicRigidBody(const std::string& i_name, RigidBo
 	return true;
 }
 
-bool BulletEngineWrapper::addDynamicSoftBody(const std::string& i_name, SoftBody* i_soft_body)
+bool BulletEngineWrapper::_addDynamicSoftBody(const std::string& i_name, SoftBody* i_soft_body)
 {
-	assert(is_init_ && "Trying to add static rigid body but Bullet physics is not initialized");
-	assert(i_soft_body && "Trying to add uninitialized body to Bullet physics");
-
-	if (!PhysicsEngine::addDynamicSoftBody(i_name, i_soft_body))
-		return false;
-
 	unsigned int nnodes = i_soft_body->nb_nodes();
 
 	const PolygonSoup& soup = i_soft_body->polygon_soup();
@@ -324,18 +279,6 @@ bool BulletEngineWrapper::addDynamicSoftBody(const std::string& i_name, SoftBody
 		body->appendFace(tri[0], tri[1], tri[2]);
 	}
 
-	//int* tris = new int[ntris*3]; // try deleting alloc here OR_DEBUG
-	//for (size_t i = 0 ; i < ntris ; ++i)
-	//{
-	//	const Triangle& t = soup.tris()[i];
-	//	tris[i*3+0] = t.get<0>();
-	//	tris[i*3+1] = t.get<1>();
-	//	tris[i*3+2] = t.get<2>();
-	//}
-
-
-	//btSoftBody*	body = btSoftBodyHelpers::CreateFromTriMesh(world_soft_config_, verts, tris, ntris);
-
 	// define soft body material
 	btSoftBody::Material*	material = body->appendMaterial();
 	material->m_kLST = 0.3;
@@ -357,21 +300,16 @@ bool BulletEngineWrapper::addDynamicSoftBody(const std::string& i_name, SoftBody
 	//add the body to the dynamics world
 	dynamics_world_->addSoftBody(body);
 
-		// add body to bullet wrapper and generic engine
+	// add body to bullet wrapper and generic engine
 	BulletSoftBody wrapped_body(body, i_soft_body);
 	bt_soft_bodies_.insert(std::make_pair(i_name, wrapped_body));
 
 	return true;
 }
 
-bool BulletEngineWrapper::addStaticRigidBody(const std::string& i_name, RigidBody* i_rigid_body)
+bool BulletEngineWrapper::_addStaticRigidBody(const std::string& i_name, RigidBody* i_rigid_body)
 {
-	assert(is_init_ && "Trying to add static rigid body but Bullet physics is not initialized");
-	assert(i_rigid_body && "Trying to add uninitialized body to Bullet physics");
 	assert(i_rigid_body->mass() == 0. && "Static bodies must have null mass");
-
-	if (!PhysicsEngine::addStaticRigidBody(i_name, i_rigid_body))
-		return false;
 
 	// add polygon soup to bullet engine   
 	// Vertices
@@ -426,4 +364,25 @@ bool BulletEngineWrapper::addStaticRigidBody(const std::string& i_name, RigidBod
 	bt_rigid_bodies_.insert(std::make_pair(i_name, wrapped_body));
 
 	return true;
+}
+
+void BulletEngineWrapper::_doOneStep(unsigned int i_step_time_ms)
+{
+	dynamics_world_->stepSimulation(static_cast<float>(i_step_time_ms *1.e-3f));
+
+	// update generic bodies transformations
+	for (std::map<std::string, BulletRigidBody>::iterator it_body = bt_rigid_bodies_.begin() ; it_body != bt_rigid_bodies_.end() ; ++it_body)
+	{
+		it_body->second.rigid_body->set_transform(Y_2_Z_Matrix * toETransform(it_body->second.bt_rigid_body->getWorldTransform()));
+	}
+
+	// TODO soft bodies
+
+	// debug drawing
+	{
+		boost::mutex::scoped_lock lock(debug_physics_drawer_->getPhysicsObjectsMutex());
+		debug_physics_drawer_->clearDraws();
+		dynamics_world_->debugDrawWorld();
+	}
+
 }

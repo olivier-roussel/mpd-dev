@@ -51,6 +51,25 @@ public:
 
 	virtual ~PhysicsEngine();
 
+	
+	/**
+	* \brief This is the actual method called by the physics thread at each time step, which will call 
+	* itself the doOneStep() method that must be reimplemented in inherited classes.
+	* It proceed to meta stuff, such iterations count, time measurements, etc.
+	*/
+  void doOneStep(unsigned int i_step_time_ms);
+
+	bool init();
+
+	void quit();
+
+	bool addStaticRigidBody(const std::string& i_name, RigidBody* i_rigid_body);
+
+	bool addDynamicRigidBody(const std::string& i_name, RigidBody* i_rigid_body); 
+
+	bool addDynamicSoftBody(const std::string& i_name, SoftBody* i_soft_body); 
+
+	void enableGravity(bool i_enable_gravity);
 
 	/**
 	* ------------------------------------
@@ -58,37 +77,32 @@ public:
 	* ------------------------------------
 	*/
 
-	/**
-	* \warning Inherited classes that reimplements this method should call PhysicsEngine::init() at first during their own init().
-	*/
-  virtual bool init();
+	///**
+	//* \warning Inherited classes that reimplements this method should call PhysicsEngine::init() at first during their own init().
+	//*/
+ // virtual bool init();
 
-	/**
-	* \warning Implementations of doOneStep() method must update bodies transformations of this class at each step.
-	*/
-  virtual void doOneStep(unsigned int i_step_time_ms) = 0;
 
-	/**
-	* \warning Inherited classes that reimplements this method should call PhysicsEngine::quit() at end during their own quit().
-	*/
-  virtual void quit();
+	///**
+	//* \warning Inherited classes that reimplements this method should call PhysicsEngine::quit() at end during their own quit().
+	//*/
+ // virtual void quit();
 
-	/**
-	* \warning Inherited classes that reimplements this method should call PhysicsEngine::addStaticRigidBody() at first during their own addStaticRigidBody().
-	*/
-	virtual bool addStaticRigidBody(const std::string& i_name, RigidBody* i_rigid_body);
+	///**
+	//* \warning Inherited classes that reimplements this method should call PhysicsEngine::addStaticRigidBody() at first during their own addStaticRigidBody().
+	//*/
+	//virtual bool addStaticRigidBody(const std::string& i_name, RigidBody* i_rigid_body);
 
-	/**
-	* \warning Inherited classes that reimplements this method should call PhysicsEngine::addDynamicRigidBody() at first during their own addDynamicRigidBody().
-	*/
-	virtual bool addDynamicRigidBody(const std::string& i_name, RigidBody* i_rigid_body); 
+	///**
+	//* \warning Inherited classes that reimplements this method should call PhysicsEngine::addDynamicRigidBody() at first during their own addDynamicRigidBody().
+	//*/
+	//virtual bool addDynamicRigidBody(const std::string& i_name, RigidBody* i_rigid_body); 
 
-	/**
-	* \warning Inherited classes that reimplements this method should call PhysicsEngine::addDynamicSoftBody() at first during their own addDynamicSoftBody().
-	*/
-  virtual bool addDynamicSoftBody(const std::string& i_name, SoftBody* i_soft_body); 
+	///**
+	//* \warning Inherited classes that reimplements this method should call PhysicsEngine::addDynamicSoftBody() at first during their own addDynamicSoftBody().
+	//*/
+ // virtual bool addDynamicSoftBody(const std::string& i_name, SoftBody* i_soft_body); 
 
-	virtual void enableGravity(bool i_enable_gravity) = 0;
 
 	/**
 	* ------------------------------------
@@ -108,6 +122,8 @@ public:
 
 	bool is_init() const;
 
+	unsigned int niter() const;
+
 protected:
 	/**
 	* ------------------------------------
@@ -115,7 +131,8 @@ protected:
 	* ------------------------------------
 	*/
   PhysicsEngine();
-	void set_is_init(bool i_is_init);
+
+	//void set_is_init(bool i_is_init);
 
 
 	/**
@@ -123,9 +140,41 @@ protected:
 	* Attributes
 	* ------------------------------------
 	*/
-  bool is_init_;
+	unsigned int niter_;		// number of steps procedeed since last init
+  bool is_init_;					// true if engine is initialized
+	bool is_gravity_;
+
 	std::map<std::string, RigidBody*> rigid_bodies_; // owned
-	std::map<std::string, SoftBody*> soft_bodies_; // owned
+	std::map<std::string, SoftBody*> soft_bodies_;	// owned
+
+protected:
+
+	/**
+	* \warning Implementations of doOneStep() method must update bodies transformations of this class at each step.
+	*/
+	virtual void _doOneStep(unsigned int i_step_time_ms) = 0;
+
+  virtual bool _init() = 0;
+
+  virtual void _quit() = 0;
+
+	virtual bool _addStaticRigidBody(const std::string& i_name, RigidBody* i_rigid_body) = 0;
+
+	virtual bool _addDynamicRigidBody(const std::string& i_name, RigidBody* i_rigid_body) = 0; 
+
+  virtual bool _addDynamicSoftBody(const std::string& i_name, SoftBody* i_soft_body) = 0; 
+
+	/**
+	* \brief Must returns true if gravity have been enabled, false otherwise.
+	*/
+	virtual bool _enableGravity(bool i_enable_gravity) = 0;
+
+private:
+
+	/**
+	* \brief Cleanup all data of physics engine base class.
+	*/
+	void _cleanup();
 
 };
 
