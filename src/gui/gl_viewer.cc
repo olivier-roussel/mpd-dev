@@ -33,9 +33,9 @@ static const float kBackColor[3] = {0.5f, 0.5f, 0.5f};
 static const float kKeybSpeed = 22.f;
 
 
-GLViewer::GLViewer(const std::string& label, int width, int height, int fps_max):
+GLViewer::GLViewer(const std::string& label, int width, int height, int refresh_rate):
   label_(label), origin_pos_(0, 0), origin_rot_(0.f, 0.f), is_done_(false), is_rotate_(false), 
-  mouse_pos_(0, 0), rot_(45.f, 45.f), width_(width), height_(height), fps_max_(fps_max),
+  mouse_pos_(0, 0), rot_(45.f, 45.f), width_(width), height_(height), refresh_rate_(refresh_rate),
   far_clip_(500.f), camera_pos_(0.f, 0.f, 0.f), last_time_(0), mouse_scroll_(0),
   move_f_(0.f), move_b_(0.f), move_l_(0.f), move_r_(0.f), move_u_(0.f), move_d_(0.f),
   timer_(io_service_), io_service_(), render_mode_(RM_FLAT)
@@ -156,7 +156,7 @@ void GLViewer::_run()
 {
   if (_init())
   {
-    const int refresh_time = fps_max_ <= 0 ? 0 : 1000 / fps_max_;
+    const int refresh_time = refresh_rate_ <= 0 ? 0 : 1000 / refresh_rate_;
     timer_.expires_from_now(boost::posix_time::milliseconds(refresh_time));
     timer_.async_wait(boost::bind(&GLViewer::_update, this));
     io_service_.run();
@@ -173,7 +173,7 @@ void GLViewer::_update()
   // schedule next update excepted if is_done() condition not reached
   if (!is_done())
   {
-    const int refresh_time = fps_max_ <= 0 ? 0 : 1000 / fps_max_;
+    const int refresh_time = refresh_rate_ <= 0 ? 0 : 1000 / refresh_rate_;
     timer_.expires_at(timer_.expires_at() + boost::posix_time::milliseconds(refresh_time));
     timer_.async_wait(boost::bind(&GLViewer::_update, this));
   }else
@@ -412,4 +412,9 @@ const std::string GLViewer::getRenderingModeName(const RenderingMode_t i_render_
 	const static char * const rendering_modes_names_array[] = { "Wireframe"/*, "Flat lines"*/, "Flat" };
 	const static std::vector<std::string> v_rendering_modes_names(rendering_modes_names_array, rendering_modes_names_array + RM_NB_RENDERING_MODES);
 	return v_rendering_modes_names[static_cast<int>(i_render_mode)];
+}
+
+int GLViewer::refresh_rate() const
+{
+	return refresh_rate_;
 }

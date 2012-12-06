@@ -22,6 +22,7 @@
 
 #include <map>
 #include <Eigen/Geometry>
+#include <boost/thread.hpp>
 #include "mpd/rigid_body.h"
 #include "mpd/soft_body.h"
 
@@ -41,6 +42,13 @@ class PhysicsEngine
 
 public:
   
+	struct PerformanceTimes
+	{
+		double last_step_dostep_cpu_time;			/**< Last step CPU time for _doOneStep() call in ms.*/ 
+		double last_step_update_cpu_time;			/**< Last step CPU time for _updateBodies() call in ms.*/ 
+		double last_step_simu_time;						/**< Last step simulation desired step time in ms.*/ 
+	};
+
   enum ImplementationType
   {
     PE_BULLET = 0,
@@ -72,10 +80,11 @@ public:
 	void enableGravity(bool i_enable_gravity);
 
 	/**
-	* ------------------------------------
-	* Interface
-	* ------------------------------------
+	* \brief Synchronize soft body parameters from generic SoftBody data 
+	* to implementation one.
+	* \note Should be removed in v2 with polymorphic bodies.
 	*/
+	void updateSoftBodyParameters(const std::string& i_name);
 
 	/**
 	* ------------------------------------
@@ -83,29 +92,20 @@ public:
 	* ------------------------------------
 	*/
 
-	/**
-	*
-	* \brief Returns world transforms of all bodies in simulation.
-	*/
-	//virtual const std::map<std::string, Eigen::Affine3d> getRigidBodiesWorldTransform() const = 0;
+	// these would not be threadsafe
+	//const std::map<std::string, RigidBody*>& rigid_bodies() const;
+	//const std::map<std::string, SoftBody*>& soft_bodies() const;
 
-	const std::map<std::string, RigidBody*>& rigid_bodies() const;
+	// Threadsafe accessors to 
+	const std::vector<std::pair<std::string, RigidBody> > getRigidBodies() const;
 
-	const std::map<std::string, SoftBody*>& soft_bodies() const;
+	const std::vector<std::pair<std::string, SoftBody> > getSoftBodies() const;
 
 	bool is_init() const;
 
 	unsigned int niter() const;
 
-	/**
-	* \brief Returns the last procedeed step cpu time in milliseconds.
-	*/
-	double last_step_cpu_time() const;
-
-	/**
-	* \brief Returns the last procedeed step simulation time in milliseconds.
-	*/
-	double last_step_simulation_time() const;
+	const PerformanceTimes performance_times() const;
 
 protected:
 	/**
@@ -114,8 +114,6 @@ protected:
 	* ------------------------------------
 	*/
   PhysicsEngine();
-
-	//void set_is_init(bool i_is_init);
 
 
 	/**
@@ -127,13 +125,20 @@ protected:
   bool is_init_;					// true if engine is initialized
 	bool is_gravity_;
 
-	std::map<std::string, RigidBody*> rigid_bodies_; // owned
-	std::map<std::string, SoftBody*> soft_bodies_;	// owned
+	std::map<std::string, RigidBody*> rigid_bodies_;	// owned
+	std::map<std::string, SoftBody*> soft_bodies_;		// owned
+	mutable boost::mutex bodies_mutex_;
 
-	double last_step_simu_time_;
-	double last_step_cpu_time_;
+	PerformanceTimes perf_times_;
+	mutable boost::mutex perf_times_mutex_;
 
 protected:
+
+	/**
+	* ------------------------------------
+	* Interface
+	* ------------------------------------
+	*/
 
 	/**
 	* \warning Implementations of doOneStep() method must update bodies transformations of this class at each step.
@@ -149,6 +154,10 @@ protected:
 	virtual bool _addDynamicRigidBody(const std::string& i_name, RigidBody* i_rigid_body) = 0; 
 
   virtual bool _addDynamicSoftBody(const std::string& i_name, SoftBody* i_soft_body) = 0; 
+
+	virtual void _updateBodies() = 0;
+
+	virtual void _updateSoftBodyParameters(const std::string& i_name) = 0;
 
 	/**
 	* \brief Must returns true if gravity have been enabled, false otherwise.

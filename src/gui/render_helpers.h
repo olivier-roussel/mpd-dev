@@ -17,12 +17,30 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#ifndef MPD_DEV_GUI_RENDER_HERLPERS_H_
-#define MPD_DEV_GUI_RENDER_HERLPERS_H_
+#ifndef MPD_DEV_GUI_RENDER_HELPERS_H_
+#define MPD_DEV_GUI_RENDER_HELPERS_H_
 
 #include <Eigen/Core>
 #include <vector>
 #include <boost/tuple/tuple.hpp>
+
+struct RenderingConfiguration
+{
+	// General rendering 
+	bool render_world_referential;
+
+	// Soft body rendering
+	bool soft_render_faces;	// will requires triangle normals recomputation at each rendering 
+	bool soft_render_edges;
+	bool soft_render_nodes;
+	
+	// General physics rendering
+	bool render_contact_points;	// TODO
+	bool render_contact_forces;	// TODO
+
+	// debugging purpose
+	bool render_physics_from_engine; // use rendering from physics engine if available
+};
 
 void drawCylinder(float minx, float miny, float minz, float maxx, float maxy, float maxz, const Eigen::Vector4f& color_);
 
@@ -32,4 +50,4 @@ void drawLineArray(const std::vector<boost::tuple<Eigen::Vector3d, Eigen::Vector
 
 void draw3dText(const Eigen::Vector3d& pos, const std::string& text, const Eigen::Vector3d& color, const double scale = 1.);
 
-#endif // MPD_DEV_GUI_RENDER_HERLPERS_H_
+#endif // MPD_DEV_GUI_RENDER_HELPERS_H_

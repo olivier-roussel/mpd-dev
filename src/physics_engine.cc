@@ -20,12 +20,9 @@
 #include "mpd/physics_engine.h"
 #include "mpd/timer.h"
 
-PhysicsEngine::PhysicsEngine() :
-	is_init_(false),
-	is_gravity_(false),
-	last_step_simu_time_(0.),
-	last_step_cpu_time_(0.)
+PhysicsEngine::PhysicsEngine()
 {
+	_cleanup();
 }
 
 PhysicsEngine::~PhysicsEngine()
@@ -50,8 +47,11 @@ void PhysicsEngine::_cleanup()
 	is_init_ = false;
 	is_gravity_ = false;
 	niter_ = 0;
-	last_step_simu_time_ = 0.;
-	last_step_cpu_time_ = 0.;
+	perf_times_.last_step_dostep_cpu_time = 0.;
+	perf_times_.last_step_update_cpu_time = 0.;
+	perf_times_.last_step_simu_time = 0.;
+
+	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
 
 	for (std::map<std::string, RigidBody*>::iterator it_bodies = rigid_bodies_.begin() ; it_bodies != rigid_bodies_.end() ; ++it_bodies)
 	{
@@ -98,15 +98,24 @@ void PhysicsEngine::doOneStep(unsigned int i_step_time_ms)
 	assert(is_init_ && "Cannot step physics engine as it is not initialized");
 
 	TimeVal start_step = getPerfTime();
-
 	// call implemented _doOneStep()
 	_doOneStep(i_step_time_ms);
-
 	const int step_cpu_time_us = getPerfDeltaTimeUsec(start_step, getPerfTime());
 
-	last_step_cpu_time_ = static_cast<double>(step_cpu_time_us * 1.e-3);
-	last_step_simu_time_ = static_cast<double>(i_step_time_ms);
-	++niter_;
+	TimeVal start_update = getPerfTime();
+	{
+		boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+		_updateBodies();
+	}
+	const int update_cpu_time_us = getPerfDeltaTimeUsec(start_update, getPerfTime());
+
+	{
+		boost::lock_guard<boost::mutex> lock(perf_times_mutex_);
+		perf_times_.last_step_update_cpu_time = static_cast<double>(update_cpu_time_us * 1.e-3);
+		perf_times_.last_step_dostep_cpu_time = static_cast<double>(step_cpu_time_us * 1.e-3);
+		perf_times_.last_step_simu_time = static_cast<double>(i_step_time_ms);
+		++niter_;
+	}
 }
 
 
@@ -117,6 +126,8 @@ bool PhysicsEngine::addStaticRigidBody(const std::string& i_name, RigidBody* i_r
 
 	if (rigid_bodies_.find(i_name) == rigid_bodies_.end())
 	{
+		boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+
 		rigid_bodies_.insert(std::make_pair(i_name, i_rigid_body));
 
 		// call implemented _addStaticRigidBody()
@@ -132,6 +143,8 @@ bool PhysicsEngine::addDynamicRigidBody(const std::string& i_name, RigidBody* i_
 
 	if (rigid_bodies_.find(i_name) == rigid_bodies_.end())
 	{
+		boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+
 		rigid_bodies_.insert(std::make_pair(i_name, i_rigid_body));
 		
 		// call implemented _addDynamicRigidBody()
@@ -147,6 +160,8 @@ bool PhysicsEngine::addDynamicSoftBody(const std::string& i_name, SoftBody* i_so
 
 	if (soft_bodies_.find(i_name) == soft_bodies_.end())
 	{
+		boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+
 		soft_bodies_.insert(std::make_pair(i_name, i_soft_body));
 		
 		// call implemented _addDynamicSoftBody()
@@ -161,10 +176,12 @@ void PhysicsEngine::enableGravity(bool i_enable_gravity)
 	is_gravity_ = _enableGravity(i_enable_gravity);
 }
 
-//void PhysicsEngine::set_is_init(bool i_is_init)
-//{
-//	is_init_ = i_is_init;
-//}
+void PhysicsEngine::updateSoftBodyParameters(const std::string& i_name)
+{
+	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+
+	_updateSoftBodyParameters(i_name);
+}
 
 bool PhysicsEngine::is_init() const
 {
@@ -176,23 +193,47 @@ unsigned int PhysicsEngine::niter() const
 	return niter_;
 }
 
-const std::map<std::string, RigidBody*>& PhysicsEngine::rigid_bodies() const
+//const std::map<std::string, RigidBody*>& PhysicsEngine::rigid_bodies() const
+//{
+//	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+//
+//	return rigid_bodies_;
+//}
+//
+//const std::map<std::string, SoftBody*>& PhysicsEngine::soft_bodies() const
+//{
+//	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+//
+//	return soft_bodies_;
+//}
+
+const std::vector<std::pair<std::string, RigidBody> > PhysicsEngine::getRigidBodies() const
 {
-	return rigid_bodies_;
+	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+
+	std::vector<std::pair<std::string, RigidBody> > rigid_bodies_copy;
+	rigid_bodies_copy.reserve(rigid_bodies_.size());
+	for (std::map<std::string, RigidBody*>::const_iterator it_body = rigid_bodies_.begin() ; it_body != rigid_bodies_.end() ; ++it_body)
+		rigid_bodies_copy.push_back(std::make_pair(it_body->first, *(it_body->second)));
+
+	return rigid_bodies_copy;
 }
 
-const std::map<std::string, SoftBody*>& PhysicsEngine::soft_bodies() const
+const std::vector<std::pair<std::string, SoftBody> > PhysicsEngine::getSoftBodies() const
 {
-	return soft_bodies_;
+	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+
+	std::vector<std::pair<std::string, SoftBody> > soft_bodies_copy;
+	soft_bodies_copy.reserve(soft_bodies_.size());
+	for (std::map<std::string, SoftBody*>::const_iterator it_body = soft_bodies_.begin() ; it_body != soft_bodies_.end() ; ++it_body)
+		soft_bodies_copy.push_back(std::make_pair(it_body->first, *(it_body->second)));
+
+	return soft_bodies_copy;
 }
 
-double PhysicsEngine::last_step_cpu_time() const
+const PhysicsEngine::PerformanceTimes PhysicsEngine::performance_times() const
 {
-	return last_step_cpu_time_;
-}
-
-double PhysicsEngine::last_step_simulation_time() const
-{
-	return last_step_simu_time_;
+	boost::lock_guard<boost::mutex> lock(perf_times_mutex_);
+	return perf_times_;
 }
 

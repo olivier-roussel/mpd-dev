@@ -92,8 +92,8 @@ bool BulletEngineWrapper::_enableGravity(bool i_enable_gravity)
 	if (is_gravity_ && is_init())
 	{
 		dynamics_world_->setGravity(toBtVector3(Z_2_Y_Matrix * kGravity));
-		//m_softBodyWorldInfo.m_gravity.setValue(0,-9.8,0);
-		//m_softBodyWorldInfo.m_sparsesdf.Initialize();
+		world_soft_config_.m_gravity.setValue(0,-9.8,0);
+		world_soft_config_.m_sparsesdf.Initialize();
 		return true;
 	}else
 		return false;
@@ -134,27 +134,6 @@ void BulletEngineWrapper::_quit()
 	}
 	bodies_tris_.clear();
 
-	// XXX fis this
-	for (std::map<std::string, BulletRigidBody>::iterator it = bt_rigid_bodies_.begin() ; it != bt_rigid_bodies_.end() ; ++it)
-	{
-		if (it->second.bt_rigid_body)
-		{
-			delete it->second.bt_rigid_body;
-			it->second.bt_rigid_body = NULL;
-		}
-	}
-	bt_rigid_bodies_.clear();
-
-	for (std::map<std::string, BulletSoftBody>::iterator it = bt_soft_bodies_.begin() ; it != bt_soft_bodies_.end() ; ++it)
-	{
-		if (it->second.bt_soft_body)
-		{
-			delete it->second.bt_soft_body;
-			it->second.bt_soft_body = NULL;
-		}
-	}
-	bt_soft_bodies_.clear();
-
 	// Global bullet handlers
 	if (dynamics_world_ )
 	{
@@ -187,6 +166,28 @@ void BulletEngineWrapper::_quit()
 		delete debug_physics_drawer_;
 		debug_physics_drawer_ = NULL;
 	}
+
+	// XXX fis this
+	for (std::map<std::string, BulletRigidBody>::iterator it = bt_rigid_bodies_.begin() ; it != bt_rigid_bodies_.end() ; ++it)
+	{
+		if (it->second.bt_rigid_body)
+		{
+			delete it->second.bt_rigid_body;
+			it->second.bt_rigid_body = NULL;
+		}
+	}
+	bt_rigid_bodies_.clear();
+
+	for (std::map<std::string, BulletSoftBody>::iterator it = bt_soft_bodies_.begin() ; it != bt_soft_bodies_.end() ; ++it)
+	{
+		if (it->second.bt_soft_body)
+		{
+			delete it->second.bt_soft_body;
+			it->second.bt_soft_body = NULL;
+		}
+	}
+	bt_soft_bodies_.clear();
+
 
 	world_soft_config_ = btSoftBodyWorldInfo();
 
@@ -250,7 +251,7 @@ bool BulletEngineWrapper::_addDynamicSoftBody(const std::string& i_name, SoftBod
 {
 	unsigned int nnodes = i_soft_body->nb_nodes();
 
-	const PolygonSoup& soup = i_soft_body->polygon_soup();
+	const PolygonSoup& soup = i_soft_body->base_geometry();
 	btAlignedObjectArray<btVector3> verts;
 	verts.resize(nnodes);
 	for (size_t i = 0 ; i < nnodes ; ++i)
@@ -281,9 +282,11 @@ bool BulletEngineWrapper::_addDynamicSoftBody(const std::string& i_name, SoftBod
 
 	// define soft body material
 	btSoftBody::Material*	material = body->appendMaterial();
-	material->m_kLST = 0.3;
-	material->m_kAST = 0.2;
-	material->m_kVST = 0.5;
+	material->m_kLST = 0.45;
+
+	//material->m_kLST = 0.3;
+	//material->m_kAST = 0.2;
+	//material->m_kVST = 0.5;
 
 	body->generateBendingConstraints(2, material);
 	body->m_cfg.piterations =	2;
@@ -291,10 +294,14 @@ bool BulletEngineWrapper::_addDynamicSoftBody(const std::string& i_name, SoftBod
 		btSoftBody::fCollision::CL_SS +
 		btSoftBody::fCollision::CL_SELF;
 
-	body->m_cfg.kDF = 0.5;
+	//body->m_cfg.kDF = 0.5;
+	body->m_cfg.kVC = 20;
+
 	body->randomizeConstraints();
 	body->transform(toBtTransform(Z_2_Y_Matrix * i_soft_body->transform()));
 	body->setTotalMass(i_soft_body->mass(), true);
+	body->setPose(true, false);
+
 	body->generateClusters(16);	
 
 	//add the body to the dynamics world
@@ -370,14 +377,6 @@ void BulletEngineWrapper::_doOneStep(unsigned int i_step_time_ms)
 {
 	dynamics_world_->stepSimulation(static_cast<float>(i_step_time_ms *1.e-3f));
 
-	// update generic bodies transformations
-	for (std::map<std::string, BulletRigidBody>::iterator it_body = bt_rigid_bodies_.begin() ; it_body != bt_rigid_bodies_.end() ; ++it_body)
-	{
-		it_body->second.rigid_body->set_transform(Y_2_Z_Matrix * toETransform(it_body->second.bt_rigid_body->getWorldTransform()));
-	}
-
-	// TODO soft bodies
-
 	// debug drawing
 	{
 		boost::mutex::scoped_lock lock(debug_physics_drawer_->getPhysicsObjectsMutex());
@@ -385,4 +384,62 @@ void BulletEngineWrapper::_doOneStep(unsigned int i_step_time_ms)
 		dynamics_world_->debugDrawWorld();
 	}
 
+}
+
+void BulletEngineWrapper::_updateBodies()
+{
+	// update generic rigid bodies transformations
+	for (std::map<std::string, BulletRigidBody>::iterator it_body = bt_rigid_bodies_.begin() ; it_body != bt_rigid_bodies_.end() ; ++it_body)
+	{
+		it_body->second.rigid_body->set_transform(Y_2_Z_Matrix * toETransform(it_body->second.bt_rigid_body->getWorldTransform()));
+	}
+
+	// update generic soft bodies transformations & deformations
+	for (std::map<std::string, BulletSoftBody>::iterator it_body = bt_soft_bodies_.begin() ; it_body != bt_soft_bodies_.end() ; ++it_body)
+	{
+		SoftBody* soft_body = it_body->second.soft_body;
+		std::vector<Eigen::Vector3d>& nodes = soft_body->nodes_position_mutable();
+		const btSoftBody const* bt_soft_body = it_body->second.bt_soft_body;
+		const btSoftBody::tNodeArray& bt_nodes(bt_soft_body->m_nodes);
+		if (bt_nodes.size() == nodes.size())
+		{
+			for (size_t i = 0 ; i < bt_nodes.size() ; ++i)
+			{
+				nodes[i] = Y_2_Z_Matrix * toEVector3(bt_nodes[i].m_x);
+			}
+		}else
+			std::cout << "[ERROR] BulletEngineWrapper::_updateBodies() : Soft body " << it_body->first << " number of nodes differs from Bullet number of nodes" << std::endl;
+	}
+}
+
+void BulletEngineWrapper::_updateSoftBodyParameters(const std::string& i_name)
+{
+	std::map<std::string, BulletSoftBody>::iterator it_body = bt_soft_bodies_.find(i_name);
+	if (it_body !=  bt_soft_bodies_.end())
+	{
+		const SoftBody const* soft_body = it_body->second.soft_body;
+		btSoftBody* bt_soft_body = it_body->second.bt_soft_body;
+
+		bt_soft_body->m_cfg.kVCF = static_cast<btScalar>(soft_body->parameters().k_ERP);
+		bt_soft_body->m_cfg.kDP = static_cast<btScalar>(soft_body->parameters().k_DP);
+		bt_soft_body->m_cfg.kPR = static_cast<btScalar>(soft_body->parameters().k_PR);
+		bt_soft_body->m_cfg.kVC = static_cast<btScalar>(soft_body->parameters().k_VC);
+		bt_soft_body->m_cfg.kDF = static_cast<btScalar>(soft_body->parameters().k_DF);
+		bt_soft_body->m_cfg.kMT = static_cast<btScalar>(soft_body->parameters().k_MT);
+		bt_soft_body->m_cfg.kCHR = static_cast<btScalar>(soft_body->parameters().k_CHR);
+		bt_soft_body->m_cfg.kKHR = static_cast<btScalar>(soft_body->parameters().k_KHR);
+		bt_soft_body->m_cfg.kSHR = static_cast<btScalar>(soft_body->parameters().k_SHR);
+		bt_soft_body->m_cfg.kAHR = static_cast<btScalar>(soft_body->parameters().k_AHR);
+
+		bt_soft_body->m_cfg.viterations = soft_body->parameters().v_niters;
+		bt_soft_body->m_cfg.piterations = soft_body->parameters().p_niters;
+		bt_soft_body->m_cfg.diterations = soft_body->parameters().d_niters;
+
+		// XXX so far we assume only one material per body
+		bt_soft_body->m_materials[0]->m_kLST = static_cast<btScalar>(soft_body->parameters().k_LST);
+		bt_soft_body->m_materials[0]->m_kAST = static_cast<btScalar>(soft_body->parameters().k_AST);
+		bt_soft_body->m_materials[0]->m_kVST = static_cast<btScalar>(soft_body->parameters().k_VST);
+
+	}else
+		std::cout << "[ERROR] BulletEngineWrapper::_updateSoftBodyParameters() : Soft body " << i_name << " not associated with Bullet engine" << std::endl;
 }

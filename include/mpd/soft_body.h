@@ -22,20 +22,17 @@
 
 #include <Eigen/Geometry>
 #include "mpd/polygon_soup.h"
-
-// TODO still a lot to complete here
+#include "mpd/soft_body_parameters.h"
 
 class SoftBody
 {
 public:
-	SoftBody(const PolygonSoup& i_stable_geom, double i_total_mass, const std::vector<double>& i_nodes_masses, const Eigen::Affine3d& i_tranform);
+	SoftBody(const PolygonSoup& i_base_geom, double i_total_mass, const std::vector<double>& i_nodes_masses, const Eigen::Affine3d& i_tranform);
 	virtual ~SoftBody();
 
-	void switchPolygonSoupAxis();
+  void invertGeometryTriangles();
 
-  void invertPolygonSoupTriangles();
-
-	const PolygonSoup& polygon_soup() const;
+	const PolygonSoup& base_geometry() const;
 
 	const Eigen::Affine3d& transform() const;
 
@@ -43,19 +40,34 @@ public:
 
 	double mass() const;
 
-	const std::vector<Eigen::Vector3d>& verts_deformations() const;
+	const std::vector<Eigen::Vector3d>& nodes_position() const;
 
-	std::vector<Eigen::Vector3d>& verts_deformations_mutable();
+	std::vector<Eigen::Vector3d>& nodes_position_mutable();
+
+	const SoftBodyParameters& parameters() const;
+
+	void set_parameters(const SoftBodyParameters& i_params);
+
+	//const std::vector<Eigen::Vector3d>& delta_nodes_position() const;
+
+	//std::vector<Eigen::Vector3d>& delta_nodes_position_mutable();
 
 	unsigned int nb_nodes() const;
 
+
 protected:
+	/*
+	* Geometrical attributes
+	*/
 	std::vector<double> m_nodes_masses;
 	double m_total_mass;
-	PolygonSoup m_stable_geom;	
-	Eigen::Affine3d m_transform;
-	std::vector<Eigen::Vector3d> m_verts_deformations;
+	PolygonSoup m_base_geometry;	
+	Eigen::Affine3d m_transform;		// seems to be useless
+	//std::vector<Eigen::Vector3d> m_delta_nodes_position;	// nodes deformations, i.e. difference between base positions and current positions
+	std::vector<Eigen::Vector3d> m_nodes_position;				// current nodes positions
 	unsigned int m_nb_nodes;
+
+	SoftBodyParameters m_params;
 };
 
 #endif // MPD_DEV_SOFT_BODY_H_

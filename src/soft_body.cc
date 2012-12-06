@@ -19,24 +19,28 @@
 
 #include "mpd/soft_body.h"
 
-SoftBody::SoftBody(const PolygonSoup& i_stable_geom, double i_total_mass, const std::vector<double>& i_nodes_masses, const Eigen::Affine3d& i_tranform):
-	m_stable_geom(i_stable_geom),
+SoftBody::SoftBody(const PolygonSoup& i_base_geometry, double i_total_mass, const std::vector<double>& i_nodes_masses, const Eigen::Affine3d& i_tranform):
+	m_base_geometry(i_base_geometry),
 	m_total_mass(i_total_mass),
 	m_nodes_masses(i_nodes_masses),
 	m_transform(i_tranform),
-	m_nb_nodes(i_nodes_masses.size())
+	m_nb_nodes(i_nodes_masses.size()),
+	m_params()
 {
-	assert (m_stable_geom.verts().size() == m_nodes_masses.size() && "inconsistency between nodes and stable vertices");
-	m_verts_deformations.resize(m_nb_nodes);
+	assert (m_base_geometry.verts().size() == m_nodes_masses.size() && "inconsistency between nodes and stable vertices");
+	//m_delta_nodes_position.resize(m_nb_nodes);
+	m_nodes_position.resize(m_nb_nodes);
+
+	
 }
 
 SoftBody::~SoftBody()
 {
 }
 
-const PolygonSoup& SoftBody::polygon_soup() const
+const PolygonSoup& SoftBody::base_geometry() const
 {
-	return m_stable_geom;
+	return m_base_geometry;
 }
 
 const Eigen::Affine3d& SoftBody::transform() const
@@ -44,14 +48,9 @@ const Eigen::Affine3d& SoftBody::transform() const
 	return m_transform;
 }
 
-void SoftBody::switchPolygonSoupAxis()
+void SoftBody::invertGeometryTriangles()
 {
-  m_stable_geom.switchYZAxis();
-}
-
-void SoftBody::invertPolygonSoupTriangles()
-{
-  m_stable_geom.invertTriangles();
+  m_base_geometry.invertTriangles();
 }
 
 double SoftBody::mass() const
@@ -64,17 +63,38 @@ void SoftBody::set_transform(const Eigen::Affine3d& i_transform)
 	m_transform = i_transform;
 }
 
-const std::vector<Eigen::Vector3d>& SoftBody::verts_deformations() const
+const std::vector<Eigen::Vector3d>& SoftBody::nodes_position() const
 {
-	return m_verts_deformations;
+	return m_nodes_position;
 }
 
-std::vector<Eigen::Vector3d>& SoftBody::verts_deformations_mutable()
+std::vector<Eigen::Vector3d>& SoftBody::nodes_position_mutable()
 {
-	return m_verts_deformations;
+	return m_nodes_position;
 }
 
 unsigned int SoftBody::nb_nodes() const
 {
 	return m_nb_nodes;
 }
+
+const SoftBodyParameters& SoftBody::parameters() const
+{
+	return m_params;
+}
+
+void SoftBody::set_parameters(const SoftBodyParameters& i_params)
+{
+	m_params = i_params;
+}
+
+// unused so far
+//const std::vector<Eigen::Vector3d>& SoftBody::delta_nodes_position() const
+//{
+//	return m_delta_nodes_position;
+//}
+//
+//std::vector<Eigen::Vector3d>& SoftBody::delta_nodes_position_mutable()
+//{
+//	return m_delta_nodes_position;
+//}

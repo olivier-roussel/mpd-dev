@@ -41,7 +41,7 @@ public:
 
 	static const std::string getRenderingModeName(const RenderingMode_t i_render_mode);
 
-  GLViewer(const std::string& label, int width, int height, int fps_max);
+  GLViewer(const std::string& label, int width, int height, int refresh_rate);
   virtual ~GLViewer();
 
   void run();
@@ -51,6 +51,8 @@ public:
   int height() const;
 
   int width() const;
+
+	int refresh_rate() const;
 
 private:
   /**
@@ -120,7 +122,7 @@ private:
   bool is_rotate_;
   int width_;                   // Window width
   int height_;                  // Window height
-  int fps_max_;                 // Maximum expected FPS
+  int refresh_rate_;            // Expected refresh rate (in frame per seconds)
   Uint32 last_time_;            // Previous rendering time
 
   Eigen::Vector3f ray_start_;   // Ray start

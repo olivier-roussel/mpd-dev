@@ -26,7 +26,7 @@ int main(int argc, char **argv)
 {
   MPDController controller;
 
-  MPDViewer viewer("mpd-dev", 1200, 960, 40, controller);
+  MPDViewer viewer("mpd-dev", 1200, 960, 70, controller);
 
 	controller.setPhysicsDebugDrawer(&viewer);
 

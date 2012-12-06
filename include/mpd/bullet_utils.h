@@ -38,10 +38,7 @@ struct BulletBaseArray {
   inline BulletBaseArray() : data(NULL), size(0) {}
 	inline BulletBaseArray(const BulletBaseArray& o) : data(o.data), size(o.size) {}
   inline ~BulletBaseArray() 
-  {
-    //if (data) // OR_DEBUG
-    //  delete[] data;
-  }
+  {}
 };
 
 /**

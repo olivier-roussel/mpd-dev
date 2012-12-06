@@ -17,30 +17,12 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#ifndef MPD_DEV_BULLET_BODIES_WRAPPER_H_
-#define MPD_DEV_BULLET_BODIES_WRAPPER_H_
+#ifndef MPD_DEV_GUI_SOFT_BODY_RENDERER_H_
+#define MPD_DEV_GUI_SOFT_BODY_RENDERER_H_
 
-#include "mpd/rigid_body.h"
 #include "mpd/soft_body.h"
 
-#include "btBulletDynamicsCommon.h"
+void renderSoftBody(const SoftBody& i_body, const Eigen::Vector4d& i_faces_color, const Eigen::Vector4d& i_edges_color, const Eigen::Vector4d& i_nodes_color, 
+	bool i_render_faces, bool i_render_edges, bool i_render_nodes);
 
-struct BulletRigidBody
-{
-	btRigidBody* bt_rigid_body;	// owned by bullet engine wrapper
-	RigidBody* rigid_body;			// owned by generic engine
-
-	inline BulletRigidBody(btRigidBody* i_bt_rigid_body, RigidBody* i_rigid_body) : 
-	bt_rigid_body(i_bt_rigid_body), rigid_body(i_rigid_body) {}
-};
-
-struct BulletSoftBody
-{
-	btSoftBody* bt_soft_body;		// owned by bullet engine wrapper
-	SoftBody* soft_body;				// owned by generic engine
-
-	inline BulletSoftBody(btSoftBody* i_bt_soft_body, SoftBody* i_soft_body) : 
-	bt_soft_body(i_bt_soft_body), soft_body(i_soft_body) {}
-};
-
-#endif // MPD_DEV_BULLET_BODIES_WRAPPER_H_
+#endif // MPD_DEV_GUI_SOFT_BODY_RENDERER_H_

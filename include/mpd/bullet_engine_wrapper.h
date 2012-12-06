@@ -68,6 +68,10 @@ protected:
 
   void _doOneStep(unsigned int i_step_time_ms);
 
+	void _updateBodies();
+
+	void _updateSoftBodyParameters(const std::string& i_name);
+
 private:
 
   std::vector<btCollisionShape*> 	 collision_shapes_;

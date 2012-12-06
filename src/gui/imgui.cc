@@ -683,6 +683,14 @@ bool imguiSlider(const char* text, double* val, double vmin, double vmax, double
   return res || valChanged;
 }
 
+bool imguiSlider(const char* text, int* val, int vmin, int vmax, int vinc, bool enabled)
+{
+	double val_d = static_cast<double>(*val);
+	bool res = imguiSlider(text, &val_d, static_cast<double>(vmin), static_cast<double>(vmax), static_cast<double>(vinc), enabled);
+	*val = static_cast<int>(val_d);
+	return res;
+}
+
 void imguiProgressBar(const float progress, const float t)
 {
   int x = g_state.widgetX;

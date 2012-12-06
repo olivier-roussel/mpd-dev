@@ -16,6 +16,8 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //
 
+// Inspired from Mikko Mononen imgui
+
 #ifndef MPD_DEV_GUI_IMGUI_H
 #define MPD_DEV_GUI_IMGUI_H
 
@@ -124,6 +126,7 @@ void imguiLabelWithAlignedValue(const char* text, float value_, int size_);
 void imguiValue(const char* text);
 void imguiValueWithColor(const char* text, unsigned char r, unsigned char g, unsigned char b, unsigned char a = 255);
 bool imguiSlider(const char* text, double* val, double vmin, double vmax, double vinc, bool enabled = true);
+bool imguiSlider(const char* text, int* val, int vmin, int vmax, int vinc, bool enabled = true);
 
 void imguiDrawText(int x, int y, int align, const char* text, unsigned int color);
 

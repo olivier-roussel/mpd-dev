@@ -23,6 +23,7 @@
 #include "gui/gl_viewer.h"
 #include "mpd/algorithm.h"
 #include "gui/perf_histogram.h"
+#include "gui/render_helpers.h"
 
 #include <boost/filesystem/path.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -50,22 +51,19 @@ public:
 
 	void clearPhysicsObjects();
 
-	void isRenderingPhysics(bool i_is_rendering_physics);
-
 	boost::mutex& getPhysicsObjectsMutex();
-
-
 
 private:
 
-	bool render_physics_;					// true if viewer must render physics
-	bool render_referential_;			// true if world referential must be rendered
+	RenderingConfiguration render_cfg_;
 
   int main_scroll_;             // Scroller for main menu
   int display_scroll_;          // Scroller for display menu
+	int soft_params_scroll_;			// Scroller for soft params menu
   MotionPlanningAlgorithms algo_; // current algorithm for MP
   std::string env_name_;
   MPDController& mpd_controller_;  // controller
+	bool show_soft_parameters_;
 
 	/**
 	* Internal viewer stuff

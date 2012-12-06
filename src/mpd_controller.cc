@@ -38,6 +38,7 @@ MPDController::~MPDController()
   //  delete env_;
   //  env_ = NULL;
   //}
+	env_ = NULL;
 	if (physics_thread_)
 	{
 		delete physics_thread_;
@@ -62,17 +63,18 @@ const PhysicsEngine& MPDController::physics_engine() const
   return *physics_engine_;
 }
 
+PhysicsEngine* MPDController::physics_engine_mutable() 
+{
+  return physics_engine_;
+}
+
 bool MPDController::loadEnvironment(const boost::filesystem::path& path)
 {
-  //if (!env_)
-		//env_ = new Environment(Eigen::Affine3d::Identity());
-  //return env_->loadPolygonSoup(path);
-
-	if (env_)
-	{
-		delete env_;
-		env_ = NULL;
-	}
+	//if (env_)
+	//{
+	//	delete env_;
+	//	env_ = NULL;
+	//}
 	PolygonSoup soup;
 	if (soup.loadFromFile(path))
 	{
@@ -134,7 +136,6 @@ void MPDController::quitPhysics()
 		delete physics_engine_;
     physics_engine_ = NULL;
 	}
-
 }
 
 bool MPDController::initPhysics(const PhysicsEngine::ImplementationType i_physics_engine_type)

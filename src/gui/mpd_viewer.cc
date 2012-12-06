@@ -28,11 +28,14 @@
 #include "gui/imgui_render_gl.h"
 #include "gui/file_utils.h"
 #include "gui/polygon_soup_renderer.h"
+#include "gui/soft_body_renderer.h"
 #include "src/config.h"
+#include "mpd/timer.h"
 
 static const int kMenuWidth = 250;
 static const float kMainMenuHeightRatio = 0.75f;
 static const float kDisplayMenuHeightRatio = 0.25f;
+static const float kSoftParamsMenuHeightRatio = 0.3f;
 
 static const int kFileSelectorHeight = 300;
 static const int kFileSelectorWidth = 250;
@@ -42,45 +45,52 @@ static const std::string kBodiesDir = std::string(kShareDir) + "/resources/bodie
 static const size_t kDebugDefaultPhysicsLinesToDraw = 4096;
 static const size_t kDebugDefaultPhysicsTextToDraw = 128;
 static const Eigen::Vector3d kDebugTextColor(1., 0.5, 0.);
-static const Eigen::Vector4f kHistoPhysicsColor(0., 0.8, 1., 1.);
+static const Eigen::Vector4f kHistoPhysicsDoStepColor(0., 0.8, 1., 1.);
+static const Eigen::Vector4f kHistoPhysicsUpdateColor(0., 0.2, 1., 1.);
 static const Eigen::Vector4f kHistoGraphicsColor(0., 1., 0., 1.);
 
 static const double kBodyFallingHeight = 5.;
 
 MPDViewer::MPDViewer(const std::string& label, int width, int height, int fps_max, MPDController& mpd_controller):
   GLViewer(label, width, height, fps_max),
-  main_scroll_(0), display_scroll_(0), algo_(MPA_KPIECE_OMPL), 
+  main_scroll_(0), display_scroll_(0), soft_params_scroll_(0), algo_(MPA_KPIECE_OMPL), 
   //is_show_envs_(false), is_show_rigid_bodies_(false), is_show_soft_bodies_(false), is_show_algos_(false), 
 	env_scroll_(0), env_name_("Pick from file..."), env_files_(),
   mpd_controller_(mpd_controller), physics_debug_lines_(), 
-	render_physics_(true), render_referential_(true),
 	mass_next_object_(1.), body_count_(0), menu_popup_y_(0),
 	current_contextual_menu_(MPDViewer::CTM_NONE),
-	physics_histogram_(1), graphics_histogram_(1),
-	physics_histo_last_step_(0)
-	{
-		physics_debug_lines_.reserve(kDebugDefaultPhysicsLinesToDraw);
+	physics_histogram_(2, 16), graphics_histogram_(1, 16),
+	physics_histo_last_step_(0), show_soft_parameters_(true)
+{
+	physics_debug_lines_.reserve(kDebugDefaultPhysicsLinesToDraw);
 
-		std::vector<Eigen::Vector4f> color_set_histo;
-		color_set_histo.push_back(kHistoPhysicsColor);
-		physics_histogram_.setColorSet(color_set_histo);
-		color_set_histo.clear();
-		color_set_histo.push_back(kHistoGraphicsColor);
-		graphics_histogram_.setColorSet(color_set_histo);
-	}
+	std::vector<Eigen::Vector4f> color_set_histo;
+	color_set_histo.push_back(kHistoPhysicsDoStepColor);
+	color_set_histo.push_back(kHistoPhysicsUpdateColor);
+	physics_histogram_.setColorSet(color_set_histo);
+	color_set_histo.clear();
+	color_set_histo.push_back(kHistoGraphicsColor);
+	graphics_histogram_.setColorSet(color_set_histo);
+
+	// init default rendering configuration
+	render_cfg_.render_world_referential = true;
+	render_cfg_.soft_render_faces = false;
+	render_cfg_.soft_render_edges = false;
+	render_cfg_.soft_render_nodes = true;
+	render_cfg_.render_contact_points = false;
+	render_cfg_.render_contact_forces = false;
+	render_cfg_.render_physics_from_engine = false;
+}
 
 MPDViewer::~MPDViewer()
 {}
 
-void MPDViewer::isRenderingPhysics(bool i_is_rendering_physics)
-{
-	render_physics_ = i_is_rendering_physics;
-}
-
 void MPDViewer::renderScene()
 {
+	TimeVal start_rendering = getPerfTime();
+
   // render world referential
-	if (render_referential_)
+	if (render_cfg_.render_world_referential)
 		renderReferential(Eigen::Vector3d::Zero(), 1.f, 2.f);
 
   if (mpd_controller_.isEnvironmentSet())	// we know environement have an identity transform
@@ -88,14 +98,25 @@ void MPDViewer::renderScene()
 
 	if (mpd_controller_.isPhysicsInitialized())
 	{
-		for (std::map<std::string, RigidBody*>::const_iterator it_body = mpd_controller_.physics_engine().rigid_bodies().begin() ; it_body != mpd_controller_.physics_engine().rigid_bodies().end() ; ++it_body)
+		const std::vector<std::pair<std::string, RigidBody> > rigid_bodies = mpd_controller_.physics_engine().getRigidBodies();
+
+		for (std::vector<std::pair<std::string, RigidBody> >::const_iterator it_body = rigid_bodies.begin() ; it_body != rigid_bodies.end() ; ++it_body)
 		{
-			//if (it_body->second->name() != mpd_controller_.environment().name)
-				drawPolygonSoup(it_body->second->polygon_soup(), it_body->second->transform(), Eigen::Vector4d(1., 0.5, 0., 1.));
+			if (it_body->first != "environment")
+				drawPolygonSoup(it_body->second.polygon_soup(), it_body->second.transform(), Eigen::Vector4d(1., 0.5, 0., 1.));
+		}
+
+		// Soft bodies rendering
+		if (render_cfg_.soft_render_nodes || render_cfg_.soft_render_nodes || render_cfg_.soft_render_nodes)
+		{
+			const std::vector<std::pair<std::string, SoftBody> > soft_bodies = mpd_controller_.physics_engine().getSoftBodies();
+			for (std::vector<std::pair<std::string, SoftBody> >::const_iterator it_body = soft_bodies.begin() ; it_body != soft_bodies.end() ; ++it_body)
+				renderSoftBody(it_body->second, Eigen::Vector4d(0., 0.1, 1., 1.), Eigen::Vector4d(0., 0., 0.2, 1.), Eigen::Vector4d(0., 1., 1., 1.), render_cfg_.soft_render_faces, render_cfg_.soft_render_edges, render_cfg_.soft_render_nodes);
+
 		}
 	}
 	// render physics (debug)
-	if (render_physics_)
+	if (render_cfg_.render_physics_from_engine)
 	{
 		boost::mutex::scoped_lock lock(debug_physics_objects_mutex_);
 		drawLineArray(physics_debug_lines_);
@@ -104,6 +125,11 @@ void MPDViewer::renderScene()
 			draw3dText(physics_debug_text_[i].get<0>(), physics_debug_text_[i].get<1>(), kDebugTextColor);
 		}
 	}
+
+	// update graphics histogram
+	const int rendering_time_us = getPerfDeltaTimeUsec(start_rendering, getPerfTime());
+	const float normalized_rendering_time = static_cast<float>(rendering_time_us) * 1.e-6f * static_cast<float>(refresh_rate());
+  graphics_histogram_.addMeasure(normalized_rendering_time);
 }
 
 void MPDViewer::handleGUI()
@@ -143,6 +169,9 @@ void MPDViewer::handleGUI()
 
 	if (imguiButton("Start", mpd_controller_.isEnvironmentSet() && !mpd_controller_.isPhysicsInitialized()))
 		mpd_controller_.initPhysics(PhysicsEngine::PE_BULLET);
+
+	if (imguiButton("Reset", mpd_controller_.isPhysicsInitialized()))
+		mpd_controller_.quitPhysics();
 
 	double phy_time_step = static_cast<double>(mpd_controller_.physics_time_step());
 	imguiSlider("Physics time step", &phy_time_step, 1., 100., 1.);
@@ -195,6 +224,12 @@ void MPDViewer::handleGUI()
 			menu_popup_y_ =  mouse_pos().y();
 		}
   }
+
+  imguiSeparator();
+
+	if (imguiCheck("Show soft parameters", show_soft_parameters_))
+		show_soft_parameters_ = !show_soft_parameters_;
+
   imguiEndScrollArea();
 	// end of main menu
 
@@ -203,19 +238,66 @@ void MPDViewer::handleGUI()
 	if (imguiBeginScrollArea("Display options", width() - kMenuWidth-10, 0, kMenuWidth, display_menu_height, &display_scroll_)) 
     set_is_mouse_over_gui(true);
 
-	if (imguiCheck("Render physics", render_physics_))
-		render_physics_ = !render_physics_;
+	if (imguiCheck("Render physics from engine", render_cfg_.render_physics_from_engine))
+		render_cfg_.render_physics_from_engine = !render_cfg_.render_physics_from_engine;
 
-	if (imguiCheck("Render world ref", render_referential_))
-		render_referential_ = !render_referential_;
+	if (imguiCheck("Render world ref", render_cfg_.render_world_referential))
+		render_cfg_.render_world_referential = !render_cfg_.render_world_referential;
   
 	if (imguiButton(getRenderingModeName(render_mode()).c_str()))
 		set_render_mode(static_cast<RenderingMode_t>((static_cast<int>(render_mode()) + 1) % static_cast<int>(RM_NB_RENDERING_MODES)));
 
+	if (imguiCheck("Render soft faces", render_cfg_.soft_render_faces))
+		render_cfg_.soft_render_faces = !render_cfg_.soft_render_faces;
+
+	if (imguiCheck("Render soft edges", render_cfg_.soft_render_edges))
+		render_cfg_.soft_render_edges = !render_cfg_.soft_render_edges;
+
+	if (imguiCheck("Render soft nodes", render_cfg_.soft_render_nodes))
+		render_cfg_.soft_render_nodes = !render_cfg_.soft_render_nodes;
+
   imguiEndScrollArea();
 
-	// perfs infos
-	
+	// soft body parameters
+	if (show_soft_parameters_)
+	{
+		const int soft_params_menu_height = static_cast<int>(height() * kSoftParamsMenuHeightRatio) - 5;
+		if (imguiBeginScrollArea("Soft body parameters", 10, 10, kMenuWidth, soft_params_menu_height, &soft_params_scroll_)) 
+			set_is_mouse_over_gui(true);
+
+		// get the first available soft body
+		//if (mpd_controller_.isPhysicsInitialized() && !mpd_controller_.physics_engine().soft_bodies().empty())
+		//{
+			//SoftBody* body = mpd_controller_.physics_engine().soft_bodies().begin()->second;
+			//const std::string body_name = mpd_controller_.physics_engine().soft_bodies().begin()->first;
+			//SoftBodyParameters new_params = body->parameters();
+			//imguiLabel("Soft body");
+			//imguiValue(mpd_controller_.physics_engine().soft_bodies().begin()->first.c_str());
+			//imguiLabel("Physics");
+			//imguiSlider("k_ERP", &new_params.k_ERP, 0.1, 10., 0.1);
+			//imguiSlider("k_DP", &new_params.k_DP, 0., 1., 0.05);
+			//imguiSlider("k_PR", &new_params.k_PR, -50., 50., 1.);
+			//imguiSlider("k_VC", &new_params.k_VC, 0., 50., 1.);
+			//imguiSlider("k_DF", &new_params.k_DF, 0., 1., 0.05);
+			//imguiSlider("k_MT", &new_params.k_MT, 0., 1., 0.05);
+			//imguiSlider("k_CHR", &new_params.k_CHR, 0., 1., 0.05);
+			//imguiSlider("k_KHR", &new_params.k_KHR, 0., 1., 0.05);
+			//imguiSlider("k_SHR", &new_params.k_SHR, 0., 1., 0.05);
+			//imguiSlider("k_AHR", &new_params.k_AHR, 0., 1., 0.05);
+			//imguiSlider("v_niters", &new_params.v_niters, 0, 32, 1);
+			//imguiSlider("p_niters", &new_params.k_AHR, 0, 32, 1);
+			//imguiSlider("d_niters", &new_params.k_AHR, 0, 32, 1);
+			//imguiLabel("Material");
+			//imguiSlider("k_LST", &new_params.k_LST, 0., 1., 0.05);
+			//imguiSlider("k_AST", &new_params.k_AST, 0., 1., 0.05);
+			//imguiSlider("k_VST", &new_params.k_VST, 0., 1., 0.05);
+			//if (!new_params.isEqual(body->parameters(), 1.e-3))
+			//	body->set_parameters(new_params);
+			//mpd_controller_.physics_engine_mutable()->updateSoftBodyParameters(body_name);
+		//}
+		imguiEndScrollArea();
+
+	}
 
   // display environments filelist if opened
   if (current_contextual_menu_ == MPDViewer::CTM_ENV_FROM_MESH)
@@ -316,8 +398,11 @@ void MPDViewer::handleGUI()
 	if (mpd_controller_.isPhysicsInitialized() && mpd_controller_.physics_engine().niter() != physics_histo_last_step_)
 	{
 		physics_histo_last_step_ = mpd_controller_.physics_engine().niter();
-		const double normalized_last_step_cpu_time = mpd_controller_.physics_engine().last_step_cpu_time() / mpd_controller_.physics_engine().last_step_simulation_time();
-		physics_histogram_.addMeasure(static_cast<float>(normalized_last_step_cpu_time));
+		const PhysicsEngine::PerformanceTimes perf_times = mpd_controller_.physics_engine().performance_times();
+		std::vector<float> time_values;
+		time_values.push_back(perf_times.last_step_dostep_cpu_time / perf_times.last_step_simu_time);
+		time_values.push_back(perf_times.last_step_update_cpu_time / perf_times.last_step_simu_time);
+		physics_histogram_.addMeasure(time_values);
 	}
 	glPushMatrix();
 	glTranslatef(10, height() - 10 - physics_histogram_.getHeight(), 0);
