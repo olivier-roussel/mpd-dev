@@ -29,8 +29,8 @@ SoftBody::SoftBody(const PolygonSoup& i_base_geometry, double i_total_mass, cons
 {
 	assert (m_base_geometry.verts().size() == m_nodes_masses.size() && "inconsistency between nodes and stable vertices");
 	//m_delta_nodes_position.resize(m_nb_nodes);
-	m_nodes_position.resize(m_nb_nodes);
-
+	m_nodes_positions.resize(m_nb_nodes);
+	m_nodes_normals.resize(m_nb_nodes);
 	
 }
 
@@ -63,14 +63,24 @@ void SoftBody::set_transform(const Eigen::Affine3d& i_transform)
 	m_transform = i_transform;
 }
 
-const std::vector<Eigen::Vector3d>& SoftBody::nodes_position() const
+const std::vector<Eigen::Vector3d>& SoftBody::nodes_positions() const
 {
-	return m_nodes_position;
+	return m_nodes_positions;
 }
 
-std::vector<Eigen::Vector3d>& SoftBody::nodes_position_mutable()
+std::vector<Eigen::Vector3d>& SoftBody::nodes_positions_mutable()
 {
-	return m_nodes_position;
+	return m_nodes_positions;
+}
+
+const std::vector<Eigen::Vector3d>& SoftBody::nodes_normals() const
+{
+	return m_nodes_normals;
+}
+
+std::vector<Eigen::Vector3d>& SoftBody::nodes_normals_mutable()
+{
+	return m_nodes_normals;
 }
 
 unsigned int SoftBody::nb_nodes() const

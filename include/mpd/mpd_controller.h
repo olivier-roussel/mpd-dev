@@ -56,7 +56,7 @@ public:
 	*
 	* \pre Physics must have been initialized.
 	*/
-	void enableGravity(bool i_enable_gravity);
+	//void enableGravity(bool i_enable_gravity);
   
 	/**
 	*

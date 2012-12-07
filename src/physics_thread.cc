@@ -69,6 +69,11 @@ bool PhysicsThread::is_paused() const
 void PhysicsThread::set_is_paused(bool i_is_paused)
 {
 	is_paused_ = i_is_paused;
+	if (!is_paused_)
+	{
+		timer_.expires_at(timer_.expires_at() + boost::posix_time::milliseconds(loop_time_ms_));
+		timer_.async_wait(boost::bind(&PhysicsThread::_update, this));
+	}
 }
 
 void PhysicsThread::_run()

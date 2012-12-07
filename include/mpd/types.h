@@ -26,10 +26,4 @@
 //typedef boost::tuple<unsigned int, unsigned int, unsigned int> Triangle;
 typedef UniformTriplet<unsigned int> Triangle;
 
-struct AABB 
-{
-  Eigen::Vector3d bmin;
-  Eigen::Vector3d bmax;
-};
-
 #endif // MPD_DEV_TYPES_H_

@@ -190,6 +190,14 @@ void MPDViewer::handleGUI()
 	if (new_phy_time_step != mpd_controller_.physics_time_step())
 		mpd_controller_.set_physics_time_step(new_phy_time_step);
 
+  imguiSeparator();
+	
+
+	if (imguiCheck("Enable gravity", mpd_controller_.isPhysicsInitialized() && mpd_controller_.physics_engine().is_gravity(), mpd_controller_.isPhysicsInitialized()))
+		mpd_controller_.physics_engine_mutable()->enableGravity(!mpd_controller_.physics_engine().is_gravity());
+	
+  imguiSeparator();
+
   imguiLabel("Algorithm");
   if (imguiButton(getMotionPlanningAlgorithmName(algo_).c_str()))
 	{
@@ -198,6 +206,7 @@ void MPDViewer::handleGUI()
   imguiSeparator();
 
 	imguiSlider("Mass", &mass_next_object_, 0., 10., 0.1);
+
 	if (imguiButton("Add rigid box", mpd_controller_.isPhysicsInitialized()))
 	{
 		Eigen::Affine3d box_t(Eigen::Affine3d::Identity());
@@ -296,8 +305,8 @@ void MPDViewer::handleGUI()
 			imguiSlider("k_SHR", &new_params.k_SHR, 0., 1., 0.05);
 			imguiSlider("k_AHR", &new_params.k_AHR, 0., 1., 0.05);
 			imguiSlider("v_niters", &new_params.v_niters, 0, 32, 1);
-			imguiSlider("p_niters", &new_params.k_AHR, 0, 32, 1);
-			imguiSlider("d_niters", &new_params.k_AHR, 0, 32, 1);
+			imguiSlider("p_niters", &new_params.p_niters, 0, 32, 1);
+			imguiSlider("d_niters", &new_params.d_niters, 0, 32, 1);
 			imguiLabel("Material");
 			imguiSlider("k_LST", &new_params.k_LST, 0., 1., 0.05);
 			imguiSlider("k_AST", &new_params.k_AST, 0., 1., 0.05);
@@ -360,9 +369,10 @@ void MPDViewer::handleGUI()
 			{
 				std::cout << "[PROGRESS] Loaded environment: nverts = " << mpd_controller_.environment().polygon_soup().verts().size() << " / nfaces = " << mpd_controller_.environment().polygon_soup().tris().size() << " / normals = " << mpd_controller_.environment().polygon_soup().normals().size() << std::endl;
 				// update camera & fog to mesh bounds
-				const AABB env_aabb = mpd_controller_.environment().polygon_soup().aabb();
-				set_far_clip(static_cast<float>((env_aabb.bmax - env_aabb.bmin).norm() * 0.5));
-				set_camera_pos((env_aabb.bmax + env_aabb.bmin).cast<float>()/ 2.f + Eigen::Vector3f::Identity()*far_clip());
+				const Eigen::Vector3d& env_aabb_min = mpd_controller_.environment().polygon_soup().aabbmin();
+				const Eigen::Vector3d& env_aabb_max = mpd_controller_.environment().polygon_soup().aabbmax();
+				set_far_clip(static_cast<float>((env_aabb_max - env_aabb_min).norm() * 0.5));
+				set_camera_pos((env_aabb_min + env_aabb_min).cast<float>()/ 2.f + Eigen::Vector3f::Identity()*far_clip());
 				set_far_clip(far_clip() * 20);
 				set_rot(Eigen::Vector2f(-45.f, -135.f));
 				//set_rot(Eigen::Vector2f(45.f, 45.f));

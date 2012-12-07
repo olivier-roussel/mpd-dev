@@ -80,6 +80,9 @@ bool MPDController::loadEnvironment(const boost::filesystem::path& path)
 	if (soup.loadFromFile(path))
 	{
 		env_ = new Environment(soup, Eigen::Affine3d::Identity());
+		if (physics_engine_)
+			physics_engine_->setWorldAABB(env_->transform() * env_->polygon_soup().aabbmin(), env_->transform() * env_->polygon_soup().aabbmax());
+
 		return true;
 	}else
 		return false;
@@ -172,6 +175,7 @@ bool MPDController::initPhysics(const PhysicsEngine::ImplementationType i_physic
 	if (isEnvironmentSet())
 	{
 		physics_engine_->addStaticRigidBody("environment", env_);
+		physics_engine_->setWorldAABB(env_->transform() * env_->polygon_soup().aabbmin(), env_->transform() * env_->polygon_soup().aabbmax());
 	}
 	
 	// init new physics thread
@@ -181,12 +185,12 @@ bool MPDController::initPhysics(const PhysicsEngine::ImplementationType i_physic
 	return true;
 }
 
-void MPDController::enableGravity(bool i_enable_gravity)
-{
-	assert (isPhysicsInitialized() && "cannot add rigid bodies if physics engine not initialized");
-
-	physics_engine_->enableGravity(i_enable_gravity);
-}
+//void MPDController::enableGravity(bool i_enable_gravity)
+//{
+//	assert (isPhysicsInitialized() && "cannot add rigid bodies if physics engine not initialized");
+//
+//	physics_engine_->enableGravity(i_enable_gravity);
+//}
 
 void MPDController::addRigidBox(const std::string& i_name, double i_mass, const Eigen::Affine3d& i_transform)
 {

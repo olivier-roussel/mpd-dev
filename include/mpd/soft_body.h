@@ -41,9 +41,13 @@ public:
 
 	double mass() const;
 
-	const std::vector<Eigen::Vector3d>& nodes_position() const;
+	const std::vector<Eigen::Vector3d>& nodes_positions() const;
 
-	std::vector<Eigen::Vector3d>& nodes_position_mutable();
+	std::vector<Eigen::Vector3d>& nodes_positions_mutable();
+
+	const std::vector<Eigen::Vector3d>& nodes_normals() const;
+
+	std::vector<Eigen::Vector3d>& nodes_normals_mutable();
 
 	const SoftBodyParameters& parameters() const;
 
@@ -62,11 +66,12 @@ protected:
 	*/
 	std::vector<double> m_nodes_masses;
 	double m_total_mass;
-	PolygonSoup m_base_geometry;	
-	Eigen::Affine3d m_transform;		// seems to be useless
+	PolygonSoup m_base_geometry;													// base body geometry (with n verts that will be deformable nodes)
+	Eigen::Affine3d m_transform;													// TODO seems to be useless
 	//std::vector<Eigen::Vector3d> m_delta_nodes_position;	// nodes deformations, i.e. difference between base positions and current positions
-	std::vector<Eigen::Vector3d> m_nodes_position;				// current nodes positions
-	unsigned int m_nb_nodes;
+	std::vector<Eigen::Vector3d> m_nodes_positions;				// current nodes positions (size n)
+	std::vector<Eigen::Vector3d> m_nodes_normals;					// current nodes normals	(size n)
+	unsigned int m_nb_nodes;															// = n
 
 	SoftBodyParameters m_params;
 };

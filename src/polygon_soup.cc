@@ -30,7 +30,12 @@
 #include <sstream>
 
 PolygonSoup::PolygonSoup() :
-  verts_(), tris_(), normals_(), aabb_(), up_axis_(UA_Y_UP)
+  verts_(), 
+	tris_(), 
+	normals_(), 
+	aabb_min_(), 
+	aabb_max_(),
+	up_axis_(UA_Y_UP)
 {}
 
 PolygonSoup::~PolygonSoup()
@@ -57,9 +62,14 @@ bool PolygonSoup::isEmpty() const
   return verts_.empty();
 }
 
-const AABB& PolygonSoup::aabb() const
+const Eigen::Vector3d& PolygonSoup::aabbmin() const
 {
-  return aabb_;
+  return aabb_min_;
+}
+
+const Eigen::Vector3d& PolygonSoup::aabbmax() const
+{
+  return aabb_max_;
 }
 
 void PolygonSoup::addVertex(const Eigen::Vector3d& i_vert)
@@ -154,8 +164,8 @@ void PolygonSoup::clear()
   verts_.clear();
   tris_.clear();
   normals_.clear();
-  aabb_.bmin = Eigen::Vector3d::Zero();
-  aabb_.bmax = Eigen::Vector3d::Zero();
+  aabb_min_ = Eigen::Vector3d::Zero();
+  aabb_max_ = Eigen::Vector3d::Zero();
 }
 
 void PolygonSoup::switchYZAxis()
@@ -197,16 +207,16 @@ void PolygonSoup::computeAABB()
 {
   if (!isEmpty())
   {
-    aabb_.bmin = verts_[0];
-    aabb_.bmax = verts_[0];
+    aabb_min_ = verts_[0];
+    aabb_max_ = verts_[0];
     for (size_t i = 1 ; i < verts_.size() ; ++i)
     {
-      aabb_.bmin = aabb_.bmin.cwiseMin(verts_[i]);
-      aabb_.bmax = aabb_.bmax.cwiseMax(verts_[i]);
+      aabb_min_ = aabb_min_.cwiseMin(verts_[i]);
+      aabb_max_ = aabb_max_.cwiseMax(verts_[i]);
     }
   }else{
-    aabb_.bmin = Eigen::Vector3d::Zero();
-    aabb_.bmax = Eigen::Vector3d::Zero();
+    aabb_min_ = Eigen::Vector3d::Zero();
+    aabb_max_ = Eigen::Vector3d::Zero();
   }
 }
 

@@ -97,17 +97,19 @@ void PhysicsEngine::doOneStep(unsigned int i_step_time_ms)
 {
 	assert(is_init_ && "Cannot step physics engine as it is not initialized");
 
-	TimeVal start_step = getPerfTime();
-	// call implemented _doOneStep()
-	_doOneStep(i_step_time_ms);
-	const int step_cpu_time_us = getPerfDeltaTimeUsec(start_step, getPerfTime());
-
-	TimeVal start_update = getPerfTime();
+	int step_cpu_time_us = 0, update_cpu_time_us = 0;
 	{
 		boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+
+		TimeVal start_step = getPerfTime();
+		// call implemented _doOneStep()
+		_doOneStep(i_step_time_ms);
+		step_cpu_time_us = getPerfDeltaTimeUsec(start_step, getPerfTime());
+
+		TimeVal start_update = getPerfTime();
 		_updateBodies();
+		update_cpu_time_us = getPerfDeltaTimeUsec(start_update, getPerfTime());
 	}
-	const int update_cpu_time_us = getPerfDeltaTimeUsec(start_update, getPerfTime());
 
 	{
 		boost::lock_guard<boost::mutex> lock(perf_times_mutex_);
@@ -191,8 +193,12 @@ bool PhysicsEngine::removeSoftBody(const std::string& i_name)
 
 void PhysicsEngine::enableGravity(bool i_enable_gravity)
 {
+	if (is_init_)
+	{
 		// call implemented _enableGravity()
-	is_gravity_ = _enableGravity(i_enable_gravity);
+		is_gravity_ = _enableGravity(i_enable_gravity);
+	}else
+		is_gravity_ = i_enable_gravity;
 }
 
 void PhysicsEngine::setSoftBodyParameters(const std::string& i_name, const SoftBodyParameters& i_params)
@@ -217,6 +223,16 @@ bool PhysicsEngine::is_init() const
 unsigned int PhysicsEngine::niter() const
 {
 	return niter_;
+}
+
+const Eigen::Vector3d& PhysicsEngine::getWorldAABBmin() const
+{
+	return world_aabb_min_;
+}
+
+const Eigen::Vector3d& PhysicsEngine::getWorldAABBmax() const
+{
+	return world_aabb_max_;
 }
 
 //const std::map<std::string, RigidBody*>& PhysicsEngine::rigid_bodies() const
@@ -325,5 +341,21 @@ const std::vector<std::string> PhysicsEngine::getSoftBodiesNames() const
 
 void PhysicsEngine::enableEngineDebugDrawer(bool i_enable_drawer)
 {
+	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+
 	is_debug_drawer_ = i_enable_drawer;
+}
+
+bool PhysicsEngine::is_gravity() const
+{
+	return is_gravity_;
+}
+
+void PhysicsEngine::setWorldAABB(const Eigen::Vector3d& i_aabb_min, const Eigen::Vector3d& i_aabb_max)
+{
+	world_aabb_min_ = i_aabb_min;
+	world_aabb_max_ = i_aabb_max;
+
+	// call implemented _setWorldAABB()
+	_setWorldAABB(world_aabb_min_, world_aabb_max_);
 }

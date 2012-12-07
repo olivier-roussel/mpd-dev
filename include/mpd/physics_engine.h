@@ -86,6 +86,8 @@ public:
 
 	void enableEngineDebugDrawer(bool i_enable_drawer);
 
+	void setWorldAABB(const Eigen::Vector3d& i_aabb_min, const Eigen::Vector3d& i_aabb_max);
+
 	/**
 	* \brief Set new parameters for given SoftBody.\n
 	* Will also call _setSoftBodyParameters() implementation for implementation specific requirements.
@@ -117,6 +119,8 @@ public:
 
 	bool is_init() const;
 
+	bool is_gravity() const;
+
 	unsigned int niter() const;
 
 	const PerformanceTimes performance_times() const;
@@ -124,6 +128,10 @@ public:
 	const size_t getNumberOfSoftBodies() const;
 
 	const size_t getNumberOfRigidBodies() const;
+
+	const Eigen::Vector3d& getWorldAABBmin() const;
+
+	const Eigen::Vector3d& getWorldAABBmax() const;
 
 protected:
 	/**
@@ -143,6 +151,7 @@ protected:
   bool is_init_;					// true if engine is initialized
 	bool is_gravity_;
 	bool is_debug_drawer_;	// true if should use physics engine own drawer (for debugging purpose, and if availbale)
+	Eigen::Vector3d world_aabb_min_, world_aabb_max_;				// world aabb
 
 	std::map<std::string, RigidBody*> rigid_bodies_;	// owned
 	std::map<std::string, SoftBody*> soft_bodies_;		// owned
@@ -179,6 +188,8 @@ protected:
 	virtual void _updateBodies() = 0;
 
 	virtual void _setSoftBodyParameters(const std::string& i_name, const SoftBodyParameters& i_params) = 0;
+
+	virtual void 	_setWorldAABB(const Eigen::Vector3d& i_aabb_min, const Eigen::Vector3d& i_aabb_max) = 0;
 
 	/**
 	* \brief Must returns true if gravity have been enabled, false otherwise.

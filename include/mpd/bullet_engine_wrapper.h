@@ -76,13 +76,15 @@ protected:
 
 	void _setSoftBodyParameters(const std::string& i_name, const SoftBodyParameters& i_params);
 
+	void _setWorldAABB(const Eigen::Vector3d& i_aabb_min, const Eigen::Vector3d& i_aabb_max);
+
 private:
 
   std::vector<btCollisionShape*> collision_shapes_;	// so far, one collision shape for one body (TODO : share this between bodies)
   //std::vector<std::pair<btCollisionShape*, int> > collision_shapes_;	// second is number of btCollisionObjects that uses this shape (for memory management)
   btDefaultCollisionConfiguration* collision_config_;
   btCollisionDispatcher* dispatcher_;
-  bt32BitAxisSweep3* overlapping_pair_cache_;
+  btDbvtBroadphase* overlapping_pair_cache_;
   btSequentialImpulseConstraintSolver* solver_; // TODO try others solvers
   btSoftRigidDynamicsWorld* dynamics_world_;
 	btSoftBodyWorldInfo	world_soft_config_;

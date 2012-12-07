@@ -53,10 +53,9 @@ bool BulletEngineWrapper::_init()
 	dispatcher_= new btCollisionDispatcher(collision_config_);
 
 	//btDbvtBroadphase is a good general purpose broadphase. You can also try out btAxis3Sweep.
-	btVector3 worldMin(-200, -200, -200);	// XXX 
-	btVector3 worldMax(200, 200, 200);
-	overlapping_pair_cache_ = new bt32BitAxisSweep3(worldMin, worldMax, 30000);
-	//overlapping_pair_cache_ = new btDbvtBroadphase();
+	//overlapping_pair_cache_ = new bt32BitAxisSweep3(btVector3(-10., -10., -10.), btVector3(10., 10., 10.), 30000);	// world aabb will be set when environment will be
+	//overlapping_pair_cache_ = new bt32BitAxisSweep3(toBtVector3(world_aabb_min_), toBtVector3(world_aabb_max_), 30000);	// world aabb will be set when environment will be
+	overlapping_pair_cache_ = new btDbvtBroadphase();
 
 	//the default constraint solver. For parallel processing you can use a different solver (see Extras/BulletMultiThreaded)
 	solver_ = new btSequentialImpulseConstraintSolver();
@@ -76,25 +75,24 @@ bool BulletEngineWrapper::_init()
 		debug_physics_drawer_->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
 	}
 
-	if (is_gravity_)
-	{
-		dynamics_world_->setGravity(toBtVector3(Z_2_Y_Matrix * kGravity));
-		world_soft_config_.m_gravity = toBtVector3(Z_2_Y_Matrix * kGravity);
-	}
+	_enableGravity(is_gravity_);
 
 	return true;
 }
 
 bool BulletEngineWrapper::_enableGravity(bool i_enable_gravity)
 {
-	if (is_gravity_ && is_init())
+	if (i_enable_gravity)
 	{
 		dynamics_world_->setGravity(toBtVector3(Z_2_Y_Matrix * kGravity));
-		world_soft_config_.m_gravity.setValue(0,-9.8,0);
+		world_soft_config_.m_gravity = toBtVector3(Z_2_Y_Matrix * kGravity);
 		world_soft_config_.m_sparsesdf.Initialize();
-		return true;
-	}else
-		return false;
+	}else{
+		dynamics_world_->setGravity(btVector3(0., 0., 0.));
+		world_soft_config_.m_gravity = btVector3(0., 0., 0.);
+		world_soft_config_.m_sparsesdf.Initialize();
+	}
+	return i_enable_gravity;
 }
 
 void BulletEngineWrapper::_quit()
@@ -331,9 +329,8 @@ bool BulletEngineWrapper::_addStaticRigidBody(const std::string& i_name, RigidBo
 	btVector3 local_inertia(0., 0., 0.);
 
 	// get poly soup AABB 
-	const AABB soup_aabb = soup.aabb();
-	const btVector3 aabb_min = toBtVector3(soup_aabb.bmin);
-	const btVector3 aabb_max = toBtVector3(soup_aabb.bmax);
+	const btVector3 aabb_min = toBtVector3(soup.aabbmin());
+	const btVector3 aabb_max = toBtVector3(soup.aabbmax());
 	btBvhTriangleMeshShape* trimesh_shape = new btBvhTriangleMeshShape(tris_idx_array, kUseQuantizedAabbCompression, aabb_min, aabb_max, true);
 	collision_shapes_.push_back(trimesh_shape);
 
@@ -474,14 +471,16 @@ void BulletEngineWrapper::_updateBodies()
 	for (std::map<std::string, BulletSoftBody>::iterator it_body = bt_soft_bodies_.begin() ; it_body != bt_soft_bodies_.end() ; ++it_body)
 	{
 		SoftBody* soft_body = it_body->second.soft_body;
-		std::vector<Eigen::Vector3d>& nodes = soft_body->nodes_position_mutable();
+		std::vector<Eigen::Vector3d>& nodes_pos = soft_body->nodes_positions_mutable();
+		std::vector<Eigen::Vector3d>& nodes_normals = soft_body->nodes_normals_mutable();
 		const btSoftBody const* bt_soft_body = it_body->second.bt_soft_body;
 		const btSoftBody::tNodeArray& bt_nodes(bt_soft_body->m_nodes);
-		if (bt_nodes.size() == nodes.size())
+		if (bt_nodes.size() == nodes_pos.size())
 		{
 			for (size_t i = 0 ; i < bt_nodes.size() ; ++i)
 			{
-				nodes[i] = Y_2_Z_Matrix * toEVector3(bt_nodes[i].m_x);
+				nodes_pos[i] = Y_2_Z_Matrix * toEVector3(bt_nodes[i].m_x);
+				nodes_normals[i] = Y_2_Z_Matrix * toEVector3(bt_nodes[i].m_n);
 			}
 		}else
 			std::cout << "[ERROR] BulletEngineWrapper::_updateBodies() : Soft body " << it_body->first << " number of nodes differs from Bullet number of nodes" << std::endl;
@@ -517,4 +516,14 @@ void BulletEngineWrapper::_setSoftBodyParameters(const std::string& i_name, cons
 
 	}else
 		std::cout << "[ERROR] BulletEngineWrapper::_updateSoftBodyParameters() : Soft body " << i_name << " not associated with Bullet engine" << std::endl;
+}
+
+void BulletEngineWrapper::_setWorldAABB(const Eigen::Vector3d& i_aabb_min, const Eigen::Vector3d& i_aabb_max)
+{
+	if (is_init())
+	{
+		const Eigen::Vector3d aabbmin_y = (Z_2_Y_Matrix * i_aabb_min).cwiseMin(Z_2_Y_Matrix * i_aabb_max);
+		const Eigen::Vector3d aabbmax_y = (Z_2_Y_Matrix * i_aabb_min).cwiseMin(Z_2_Y_Matrix * i_aabb_max);
+		// TODO update Bullet broadphase world AABB if required...
+	}
 }

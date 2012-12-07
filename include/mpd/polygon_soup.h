@@ -88,7 +88,9 @@ public:
 
   bool isEmpty() const;
 
-  const AABB& aabb() const;
+  const Eigen::Vector3d& aabbmin() const;
+
+  const Eigen::Vector3d& aabbmax() const;
 
 	/**
 	* Static methods
@@ -100,7 +102,7 @@ private:
   std::vector<Eigen::Vector3d> verts_;      // Vertices array
   std::vector<Triangle> tris_;            // Triangles array
   std::vector<Eigen::Vector3d> normals_;    // Triangles normals
-  AABB aabb_;             // Poly soup AABB (automatically updated)
+  Eigen::Vector3d aabb_min_, aabb_max_;             // Poly soup AABB (automatically updated)
   UpAxis_t up_axis_;
 
   bool loadFromObj(const boost::filesystem::path& filename);
