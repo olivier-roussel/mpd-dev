@@ -81,6 +81,12 @@ public:
 	* \pre Physics must have been initialized.
 	*/
 	bool addSoftBodyFromMeshFile(const std::string& i_name, const boost::filesystem::path& path, double i_mass, const Eigen::Affine3d& i_transform);
+	
+	/**
+	*
+	* \pre Physics must have been initialized.
+	*/
+	void setPhysicsPaused(bool i_physics_paused);
 
 	/**
 	* Accessors
@@ -100,6 +106,8 @@ public:
 
 	bool isPhysicsEngineSet() const;
 
+	bool isPhysicsPaused() const;
+
 	PhysicsEngine* physics_engine_mutable();	// for debugging purpose
 
 private:
@@ -108,6 +116,7 @@ private:
 	PhysicsThread* physics_thread_;		// owned
 
 	unsigned int physics_time_step_ms_;
+	bool is_physics_paused_;
 
 	/**
 	* Debug viewer for physics

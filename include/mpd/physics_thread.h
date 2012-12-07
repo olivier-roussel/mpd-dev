@@ -39,22 +39,26 @@ public:
 
   void join();
 
+  void set_is_done(bool i_is_done);
+
+	void set_is_paused(bool i_is_paused);
+
   bool is_done() const;
 
-  void set_is_done(bool i_is_done);
+	bool is_paused() const;
 
 protected:
   /**
    * Attributes
    */
   bool is_done_;
+	bool is_paused_;
   
   boost::thread thread_;        //  thread handle
   boost::asio::io_service io_service_;
   boost::asio::deadline_timer timer_;
 
   unsigned int loop_time_ms_;
-  //PhysicsManager* physics_manager_;
   PhysicsEngine* physics_engine_;
 
   /**

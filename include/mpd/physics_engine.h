@@ -23,6 +23,7 @@
 #include <map>
 #include <Eigen/Geometry>
 #include <boost/thread.hpp>
+#include <boost/optional.hpp>
 #include "mpd/rigid_body.h"
 #include "mpd/soft_body.h"
 
@@ -77,14 +78,19 @@ public:
 
 	bool addDynamicSoftBody(const std::string& i_name, SoftBody* i_soft_body); 
 
+	bool removeSoftBody(const std::string& i_name);
+
+	//void removeRigidBody(const std::string& i_name);	// TODO
+
 	void enableGravity(bool i_enable_gravity);
 
+	void enableEngineDebugDrawer(bool i_enable_drawer);
+
 	/**
-	* \brief Synchronize soft body parameters from generic SoftBody data 
-	* to implementation one.
-	* \note Should be removed in v2 with polymorphic bodies.
+	* \brief Set new parameters for given SoftBody.\n
+	* Will also call _setSoftBodyParameters() implementation for implementation specific requirements.
 	*/
-	void updateSoftBodyParameters(const std::string& i_name);
+	void setSoftBodyParameters(const std::string& i_name, const SoftBodyParameters& i_params);
 
 	/**
 	* ------------------------------------
@@ -101,11 +107,23 @@ public:
 
 	const std::vector<std::pair<std::string, SoftBody> > getSoftBodies() const;
 
+	const boost::optional<const RigidBody> getRigidBody(const std::string& i_name) const;
+
+	const boost::optional<const SoftBody> getSoftBody(const std::string& i_name) const;
+
+	const std::vector<std::string> getRigidBodiesNames() const;
+
+	const std::vector<std::string> getSoftBodiesNames() const;
+
 	bool is_init() const;
 
 	unsigned int niter() const;
 
 	const PerformanceTimes performance_times() const;
+
+	const size_t getNumberOfSoftBodies() const;
+
+	const size_t getNumberOfRigidBodies() const;
 
 protected:
 	/**
@@ -124,6 +142,7 @@ protected:
 	unsigned int niter_;		// number of steps procedeed since last init
   bool is_init_;					// true if engine is initialized
 	bool is_gravity_;
+	bool is_debug_drawer_;	// true if should use physics engine own drawer (for debugging purpose, and if availbale)
 
 	std::map<std::string, RigidBody*> rigid_bodies_;	// owned
 	std::map<std::string, SoftBody*> soft_bodies_;		// owned
@@ -155,9 +174,11 @@ protected:
 
   virtual bool _addDynamicSoftBody(const std::string& i_name, SoftBody* i_soft_body) = 0; 
 
+  virtual bool _removeSoftBody(const std::string& i_name) = 0; 
+
 	virtual void _updateBodies() = 0;
 
-	virtual void _updateSoftBodyParameters(const std::string& i_name) = 0;
+	virtual void _setSoftBodyParameters(const std::string& i_name, const SoftBodyParameters& i_params) = 0;
 
 	/**
 	* \brief Must returns true if gravity have been enabled, false otherwise.

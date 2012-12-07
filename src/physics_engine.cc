@@ -46,6 +46,7 @@ void PhysicsEngine::_cleanup()
 {
 	is_init_ = false;
 	is_gravity_ = false;
+	is_debug_drawer_ = false;
 	niter_ = 0;
 	perf_times_.last_step_dostep_cpu_time = 0.;
 	perf_times_.last_step_update_cpu_time = 0.;
@@ -92,7 +93,6 @@ bool PhysicsEngine::init()
 		return false;
 }
 
-
 void PhysicsEngine::doOneStep(unsigned int i_step_time_ms)
 {
 	assert(is_init_ && "Cannot step physics engine as it is not initialized");
@@ -124,10 +124,10 @@ bool PhysicsEngine::addStaticRigidBody(const std::string& i_name, RigidBody* i_r
 	assert(is_init_ && "Trying to add static rigid body but physics engine is not initialized");
 	assert(i_rigid_body && "Trying to add uninitialized rigid body to physics engine");
 
+	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+
 	if (rigid_bodies_.find(i_name) == rigid_bodies_.end())
 	{
-		boost::lock_guard<boost::mutex> lock(bodies_mutex_);
-
 		rigid_bodies_.insert(std::make_pair(i_name, i_rigid_body));
 
 		// call implemented _addStaticRigidBody()
@@ -141,10 +141,10 @@ bool PhysicsEngine::addDynamicRigidBody(const std::string& i_name, RigidBody* i_
 	assert(is_init_ && "Trying to add dynamic rigid body but physics engine is not initialized");
 	assert(i_rigid_body && "Trying to add uninitialized rigid body to physics engine");
 
+	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+
 	if (rigid_bodies_.find(i_name) == rigid_bodies_.end())
 	{
-		boost::lock_guard<boost::mutex> lock(bodies_mutex_);
-
 		rigid_bodies_.insert(std::make_pair(i_name, i_rigid_body));
 		
 		// call implemented _addDynamicRigidBody()
@@ -158,14 +158,33 @@ bool PhysicsEngine::addDynamicSoftBody(const std::string& i_name, SoftBody* i_so
 	assert(is_init_ && "Trying to add dynamic soft body but physics engine is not initialized");
 	assert(i_soft_body && "Trying to add uninitialized soft body to physics engine");
 
+	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+
 	if (soft_bodies_.find(i_name) == soft_bodies_.end())
 	{
-		boost::lock_guard<boost::mutex> lock(bodies_mutex_);
-
 		soft_bodies_.insert(std::make_pair(i_name, i_soft_body));
 		
 		// call implemented _addDynamicSoftBody()
 		return _addDynamicSoftBody(i_name, i_soft_body);
+	}else
+		return false;
+}
+
+bool PhysicsEngine::removeSoftBody(const std::string& i_name)
+{
+	assert(is_init_ && "Trying to add dynamic soft body but physics engine is not initialized");
+
+	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+
+	std::map<std::string, SoftBody*>::iterator it_body = soft_bodies_.find(i_name);
+	if (it_body != soft_bodies_.end())
+	{
+		delete it_body->second;
+		it_body->second = NULL;
+		soft_bodies_.erase(it_body);
+
+		// call implemented _removeSoftBody()
+		return _removeSoftBody(i_name);
 	}else
 		return false;
 }
@@ -176,11 +195,18 @@ void PhysicsEngine::enableGravity(bool i_enable_gravity)
 	is_gravity_ = _enableGravity(i_enable_gravity);
 }
 
-void PhysicsEngine::updateSoftBodyParameters(const std::string& i_name)
+void PhysicsEngine::setSoftBodyParameters(const std::string& i_name, const SoftBodyParameters& i_params)
 {
 	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
 
-	_updateSoftBodyParameters(i_name);
+	std::map<std::string, SoftBody*>::const_iterator it_body = soft_bodies_.find(i_name);
+	if (it_body != soft_bodies_.end())
+	{
+		it_body->second->set_parameters(i_params);
+
+		// call implemented _setSoftBodyParameters()
+		_setSoftBodyParameters(i_name, i_params);
+	}
 }
 
 bool PhysicsEngine::is_init() const
@@ -237,3 +263,67 @@ const PhysicsEngine::PerformanceTimes PhysicsEngine::performance_times() const
 	return perf_times_;
 }
 
+const boost::optional<const RigidBody> PhysicsEngine::getRigidBody(const std::string& i_name) const
+{
+	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+
+	std::map<std::string, RigidBody*>::const_iterator it_body = rigid_bodies_.find(i_name);
+	if (it_body != rigid_bodies_.end())
+	{
+		return boost::optional<const RigidBody>(RigidBody(*(it_body->second)));
+	}else
+		return boost::none;
+}
+
+const boost::optional<const SoftBody> PhysicsEngine::getSoftBody(const std::string& i_name) const
+{
+	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+
+	std::map<std::string, SoftBody*>::const_iterator it_body = soft_bodies_.find(i_name);
+	if (it_body != soft_bodies_.end())
+	{
+		return boost::optional<const SoftBody>(SoftBody(*(it_body->second)));
+	}else
+		return boost::none;
+}
+
+const size_t PhysicsEngine::getNumberOfSoftBodies() const
+{
+	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+	return soft_bodies_.size();
+}
+
+const size_t PhysicsEngine::getNumberOfRigidBodies() const
+{
+	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+	return rigid_bodies_.size();
+}
+
+const std::vector<std::string> PhysicsEngine::getRigidBodiesNames() const
+{
+	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+	
+	std::vector<std::string> rigid_bodies_names;
+	rigid_bodies_names.reserve(rigid_bodies_.size());
+	for (std::map<std::string, RigidBody*>::const_iterator it_body = rigid_bodies_.begin() ; it_body != rigid_bodies_.end() ; ++it_body)
+		rigid_bodies_names.push_back(it_body->first);
+
+	return rigid_bodies_names;
+}
+
+const std::vector<std::string> PhysicsEngine::getSoftBodiesNames() const
+{
+	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+
+	std::vector<std::string> soft_bodies_names;
+	soft_bodies_names.reserve(soft_bodies_.size());
+	for (std::map<std::string, SoftBody*>::const_iterator it_body = soft_bodies_.begin() ; it_body != soft_bodies_.end() ; ++it_body)
+		soft_bodies_names.push_back(it_body->first);
+
+	return soft_bodies_names;
+}
+
+void PhysicsEngine::enableEngineDebugDrawer(bool i_enable_drawer)
+{
+	is_debug_drawer_ = i_enable_drawer;
+}

@@ -36,6 +36,7 @@ static const int kMenuWidth = 250;
 static const float kMainMenuHeightRatio = 0.75f;
 static const float kDisplayMenuHeightRatio = 0.25f;
 static const float kSoftParamsMenuHeightRatio = 0.3f;
+static const float kBodiesMenuHeightRatio = 0.5f;
 
 static const int kFileSelectorHeight = 300;
 static const int kFileSelectorWidth = 250;
@@ -53,7 +54,8 @@ static const double kBodyFallingHeight = 5.;
 
 MPDViewer::MPDViewer(const std::string& label, int width, int height, int fps_max, MPDController& mpd_controller):
   GLViewer(label, width, height, fps_max),
-  main_scroll_(0), display_scroll_(0), soft_params_scroll_(0), algo_(MPA_KPIECE_OMPL), 
+  main_scroll_(0), display_scroll_(0), soft_params_scroll_(0), bodies_scroll_(0), 
+	algo_(MPA_KPIECE_OMPL), 
   //is_show_envs_(false), is_show_rigid_bodies_(false), is_show_soft_bodies_(false), is_show_algos_(false), 
 	env_scroll_(0), env_name_("Pick from file..."), env_files_(),
   mpd_controller_(mpd_controller), physics_debug_lines_(), 
@@ -111,8 +113,12 @@ void MPDViewer::renderScene()
 		{
 			const std::vector<std::pair<std::string, SoftBody> > soft_bodies = mpd_controller_.physics_engine().getSoftBodies();
 			for (std::vector<std::pair<std::string, SoftBody> >::const_iterator it_body = soft_bodies.begin() ; it_body != soft_bodies.end() ; ++it_body)
-				renderSoftBody(it_body->second, Eigen::Vector4d(0., 0.1, 1., 1.), Eigen::Vector4d(0., 0., 0.2, 1.), Eigen::Vector4d(0., 1., 1., 1.), render_cfg_.soft_render_faces, render_cfg_.soft_render_edges, render_cfg_.soft_render_nodes);
-
+			{
+				if (selected_soft_body_ && it_body->first == selected_soft_body_->first)
+					renderSoftBody(it_body->second, Eigen::Vector4d(1., 0., 0.1, 1.), Eigen::Vector4d(0.2, 0., 0., 1.), Eigen::Vector4d(1., 0., 1., 1.), render_cfg_.soft_render_faces, render_cfg_.soft_render_edges, render_cfg_.soft_render_nodes);
+				else
+					renderSoftBody(it_body->second, Eigen::Vector4d(0., 0.1, 1., 1.), Eigen::Vector4d(0., 0., 0.2, 1.), Eigen::Vector4d(0., 1., 1., 1.), render_cfg_.soft_render_faces, render_cfg_.soft_render_edges, render_cfg_.soft_render_nodes);
+			}
 		}
 	}
 	// render physics (debug)
@@ -170,6 +176,11 @@ void MPDViewer::handleGUI()
 	if (imguiButton("Start", mpd_controller_.isEnvironmentSet() && !mpd_controller_.isPhysicsInitialized()))
 		mpd_controller_.initPhysics(PhysicsEngine::PE_BULLET);
 
+	if (mpd_controller_.isPhysicsInitialized())
+	{
+		if (imguiButton(mpd_controller_.isPhysicsPaused() ? "Resume" : "Pause"))
+			mpd_controller_.setPhysicsPaused(!mpd_controller_.isPhysicsPaused());
+	}
 	if (imguiButton("Reset", mpd_controller_.isPhysicsInitialized()))
 		mpd_controller_.quitPhysics();
 
@@ -238,9 +249,11 @@ void MPDViewer::handleGUI()
 	if (imguiBeginScrollArea("Display options", width() - kMenuWidth-10, 0, kMenuWidth, display_menu_height, &display_scroll_)) 
     set_is_mouse_over_gui(true);
 
-	if (imguiCheck("Render physics from engine", render_cfg_.render_physics_from_engine))
+	if (imguiCheck("Render physics from engine", render_cfg_.render_physics_from_engine, mpd_controller_.isPhysicsInitialized()))
+	{
 		render_cfg_.render_physics_from_engine = !render_cfg_.render_physics_from_engine;
-
+		mpd_controller_.physics_engine_mutable()->enableEngineDebugDrawer(render_cfg_.render_physics_from_engine);
+	}
 	if (imguiCheck("Render world ref", render_cfg_.render_world_referential))
 		render_cfg_.render_world_referential = !render_cfg_.render_world_referential;
   
@@ -259,45 +272,75 @@ void MPDViewer::handleGUI()
   imguiEndScrollArea();
 
 	// soft body parameters
+	const int soft_params_menu_height = static_cast<int>(height() * kSoftParamsMenuHeightRatio) - 5;
 	if (show_soft_parameters_)
 	{
-		const int soft_params_menu_height = static_cast<int>(height() * kSoftParamsMenuHeightRatio) - 5;
 		if (imguiBeginScrollArea("Soft body parameters", 10, 10, kMenuWidth, soft_params_menu_height, &soft_params_scroll_)) 
 			set_is_mouse_over_gui(true);
 
 		// get the first available soft body
-		//if (mpd_controller_.isPhysicsInitialized() && !mpd_controller_.physics_engine().soft_bodies().empty())
-		//{
-			//SoftBody* body = mpd_controller_.physics_engine().soft_bodies().begin()->second;
-			//const std::string body_name = mpd_controller_.physics_engine().soft_bodies().begin()->first;
-			//SoftBodyParameters new_params = body->parameters();
-			//imguiLabel("Soft body");
-			//imguiValue(mpd_controller_.physics_engine().soft_bodies().begin()->first.c_str());
-			//imguiLabel("Physics");
-			//imguiSlider("k_ERP", &new_params.k_ERP, 0.1, 10., 0.1);
-			//imguiSlider("k_DP", &new_params.k_DP, 0., 1., 0.05);
-			//imguiSlider("k_PR", &new_params.k_PR, -50., 50., 1.);
-			//imguiSlider("k_VC", &new_params.k_VC, 0., 50., 1.);
-			//imguiSlider("k_DF", &new_params.k_DF, 0., 1., 0.05);
-			//imguiSlider("k_MT", &new_params.k_MT, 0., 1., 0.05);
-			//imguiSlider("k_CHR", &new_params.k_CHR, 0., 1., 0.05);
-			//imguiSlider("k_KHR", &new_params.k_KHR, 0., 1., 0.05);
-			//imguiSlider("k_SHR", &new_params.k_SHR, 0., 1., 0.05);
-			//imguiSlider("k_AHR", &new_params.k_AHR, 0., 1., 0.05);
-			//imguiSlider("v_niters", &new_params.v_niters, 0, 32, 1);
-			//imguiSlider("p_niters", &new_params.k_AHR, 0, 32, 1);
-			//imguiSlider("d_niters", &new_params.k_AHR, 0, 32, 1);
-			//imguiLabel("Material");
-			//imguiSlider("k_LST", &new_params.k_LST, 0., 1., 0.05);
-			//imguiSlider("k_AST", &new_params.k_AST, 0., 1., 0.05);
-			//imguiSlider("k_VST", &new_params.k_VST, 0., 1., 0.05);
-			//if (!new_params.isEqual(body->parameters(), 1.e-3))
-			//	body->set_parameters(new_params);
-			//mpd_controller_.physics_engine_mutable()->updateSoftBodyParameters(body_name);
-		//}
+		if (mpd_controller_.isPhysicsInitialized() && selected_soft_body_)
+		{
+			SoftBodyParameters new_params = selected_soft_body_->second.parameters();
+			imguiLabel("Soft body");
+			imguiValue(selected_soft_body_->first.c_str());
+			imguiLabel("Physics");
+			imguiSlider("k_ERP", &new_params.k_ERP, 0.1, 10., 0.1);
+			imguiSlider("k_DP", &new_params.k_DP, 0., 1., 0.05);
+			imguiSlider("k_PR", &new_params.k_PR, -50., 50., 1.);
+			imguiSlider("k_VC", &new_params.k_VC, 0., 50., 1.);
+			imguiSlider("k_DF", &new_params.k_DF, 0., 1., 0.05);
+			imguiSlider("k_MT", &new_params.k_MT, 0., 1., 0.05);
+			imguiSlider("k_CHR", &new_params.k_CHR, 0., 1., 0.05);
+			imguiSlider("k_KHR", &new_params.k_KHR, 0., 1., 0.05);
+			imguiSlider("k_SHR", &new_params.k_SHR, 0., 1., 0.05);
+			imguiSlider("k_AHR", &new_params.k_AHR, 0., 1., 0.05);
+			imguiSlider("v_niters", &new_params.v_niters, 0, 32, 1);
+			imguiSlider("p_niters", &new_params.k_AHR, 0, 32, 1);
+			imguiSlider("d_niters", &new_params.k_AHR, 0, 32, 1);
+			imguiLabel("Material");
+			imguiSlider("k_LST", &new_params.k_LST, 0., 1., 0.05);
+			imguiSlider("k_AST", &new_params.k_AST, 0., 1., 0.05);
+			imguiSlider("k_VST", &new_params.k_VST, 0., 1., 0.05);
+			if (!new_params.isEqual(selected_soft_body_->second.parameters(), 1.e-3))
+			{
+				mpd_controller_.physics_engine_mutable()->setSoftBodyParameters(selected_soft_body_->first, new_params);
+				selected_soft_body_->second.set_parameters(new_params);
+			}
+		}
 		imguiEndScrollArea();
 
 	}
+
+	// Bodies list
+	const int bodies_menu_height = static_cast<int>(height() * kBodiesMenuHeightRatio) - 5 > height() - (soft_params_menu_height + physics_histogram_.getHeight() + 20) ? 
+		height() - (soft_params_menu_height + physics_histogram_.getHeight() + 20) : static_cast<int>(height() * kBodiesMenuHeightRatio) - 5;
+	if (imguiBeginScrollArea("Bodies", 10, 20 + soft_params_menu_height, kMenuWidth, bodies_menu_height, &bodies_scroll_)) 
+    set_is_mouse_over_gui(true);
+
+	imguiLabel("Soft bodies");
+	if (mpd_controller_.isPhysicsInitialized())
+	{
+		const std::vector<std::string> soft_bodies_names = mpd_controller_.physics_engine().getSoftBodiesNames();
+		for (size_t i = 0 ; i < soft_bodies_names.size() ; ++i)
+		{
+			if (imguiItem(soft_bodies_names[i].c_str(), selected_soft_body_ && selected_soft_body_->first == soft_bodies_names[i]))
+			{
+				boost::optional<const SoftBody> sel_soft_body = mpd_controller_.physics_engine().getSoftBody(soft_bodies_names[i]);
+				if (sel_soft_body)
+					selected_soft_body_ = boost::optional<std::pair<std::string, SoftBody> >(std::make_pair(soft_bodies_names[i], *sel_soft_body));
+				else
+					selected_soft_body_ = boost::none;
+			}
+		}
+	}
+  imguiSeparator();
+	
+	if (imguiButton("Remove selected", mpd_controller_.isPhysicsInitialized() && selected_soft_body_))
+		mpd_controller_.physics_engine_mutable()->removeSoftBody(selected_soft_body_->first);
+
+  imguiEndScrollArea();
+
 
   // display environments filelist if opened
   if (current_contextual_menu_ == MPDViewer::CTM_ENV_FROM_MESH)

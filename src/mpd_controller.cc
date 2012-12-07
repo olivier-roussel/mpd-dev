@@ -26,7 +26,8 @@ MPDController::MPDController()
 	physics_engine_(NULL),
 	physics_thread_(NULL),
 	physics_time_step_ms_(kDefaultPhysicsTimeStepMs),
-	debug_physics_viewer_(NULL)
+	debug_physics_viewer_(NULL),
+	is_physics_paused_(false)
 {
 }
 
@@ -247,3 +248,16 @@ void MPDController::setPhysicsDebugDrawer(MPDViewer* i_viewer)
 	debug_physics_viewer_ = i_viewer;
 }
 
+void MPDController::setPhysicsPaused(bool i_physics_paused)
+{
+	assert (physics_thread_ != NULL && "physics has not been initialized yet");
+
+	physics_thread_->set_is_paused(i_physics_paused);
+}
+
+bool MPDController::isPhysicsPaused() const
+{
+	assert (physics_thread_ != NULL && "physics has not been initialized yet");
+
+	return physics_thread_->is_paused();
+}

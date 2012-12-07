@@ -23,6 +23,7 @@
 
 PhysicsThread::PhysicsThread(PhysicsEngine* i_physics_engine) : 
   is_done_(true),
+	is_paused_(false),
   physics_engine_(i_physics_engine),
   loop_time_ms_(0),
   thread_(),
@@ -40,6 +41,7 @@ PhysicsThread::~PhysicsThread()
 void PhysicsThread::run(unsigned int i_loop_time_ms)
 {
   is_done_ = false;
+	is_paused_ = false;
   loop_time_ms_ = i_loop_time_ms;
   thread_ = boost::thread(&PhysicsThread::_run, this);
 }
@@ -59,6 +61,16 @@ bool PhysicsThread::is_done() const
   return is_done_;
 }
 
+bool PhysicsThread::is_paused() const
+{
+	return is_paused_;
+}
+
+void PhysicsThread::set_is_paused(bool i_is_paused)
+{
+	is_paused_ = i_is_paused;
+}
+
 void PhysicsThread::_run()
 {
   if (physics_engine_->is_init())
@@ -74,15 +86,18 @@ void PhysicsThread::_run()
 
 void PhysicsThread::_update()
 {
-  physics_engine_->doOneStep(static_cast<double>(loop_time_ms_));
+	if (!is_paused_)
+	{
+		physics_engine_->doOneStep(static_cast<double>(loop_time_ms_));
 
-  // schedule next update excepted if is_done() condition not reached
-  if (!is_done())
-  {
-    timer_.expires_at(timer_.expires_at() + boost::posix_time::milliseconds(loop_time_ms_));
-    timer_.async_wait(boost::bind(&PhysicsThread::_update, this));
-  }else
-    _quit();
+		// schedule next update excepted if is_done() condition not reached
+		if (!is_done())
+		{
+			timer_.expires_at(timer_.expires_at() + boost::posix_time::milliseconds(loop_time_ms_));
+			timer_.async_wait(boost::bind(&PhysicsThread::_update, this));
+		}else
+			_quit();
+	}
 }
 
 void PhysicsThread::_quit()

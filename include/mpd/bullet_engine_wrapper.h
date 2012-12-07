@@ -64,27 +64,30 @@ protected:
 
   bool _addDynamicSoftBody(const std::string& i_name, SoftBody* i_soft_body);
 
+  bool _removeSoftBody(const std::string& i_name); 
+	
+	bool _removeRigidBody(const std::string& i_name);
+
 	bool _enableGravity(bool i_enable_gravity);
 
   void _doOneStep(unsigned int i_step_time_ms);
 
 	void _updateBodies();
 
-	void _updateSoftBodyParameters(const std::string& i_name);
+	void _setSoftBodyParameters(const std::string& i_name, const SoftBodyParameters& i_params);
 
 private:
 
-  std::vector<btCollisionShape*> 	 collision_shapes_;
+  std::vector<btCollisionShape*> collision_shapes_;	// so far, one collision shape for one body (TODO : share this between bodies)
+  //std::vector<std::pair<btCollisionShape*, int> > collision_shapes_;	// second is number of btCollisionObjects that uses this shape (for memory management)
   btDefaultCollisionConfiguration* collision_config_;
   btCollisionDispatcher* dispatcher_;
   bt32BitAxisSweep3* overlapping_pair_cache_;
-  btSequentialImpulseConstraintSolver* solver_; // TODO check if solver appropriated
+  btSequentialImpulseConstraintSolver* solver_; // TODO try others solvers
   btSoftRigidDynamicsWorld* dynamics_world_;
 	btSoftBodyWorldInfo	world_soft_config_;
 
   std::map<std::string, btTriangleIndexVertexArray*> tris_indexes_arrays_;
-  std::map<std::string, BulletBaseArray<btVector3>* > bodies_verts_;
-  std::map<std::string, BulletBaseArray<int>* > bodies_tris_;
   std::map<std::string, BulletRigidBody> bt_rigid_bodies_;
   std::map<std::string, BulletSoftBody> bt_soft_bodies_;
 

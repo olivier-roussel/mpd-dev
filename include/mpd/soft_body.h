@@ -27,6 +27,7 @@
 class SoftBody
 {
 public:
+
 	SoftBody(const PolygonSoup& i_base_geom, double i_total_mass, const std::vector<double>& i_nodes_masses, const Eigen::Affine3d& i_tranform);
 	virtual ~SoftBody();
 

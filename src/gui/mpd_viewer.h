@@ -22,12 +22,14 @@
 
 #include "gui/gl_viewer.h"
 #include "mpd/algorithm.h"
+#include "mpd/soft_body.h"
 #include "gui/perf_histogram.h"
 #include "gui/render_helpers.h"
 
 #include <boost/filesystem/path.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/optional.hpp>
 
 class MPDController;
 
@@ -60,10 +62,12 @@ private:
   int main_scroll_;             // Scroller for main menu
   int display_scroll_;          // Scroller for display menu
 	int soft_params_scroll_;			// Scroller for soft params menu
+	int bodies_scroll_;						// Scroller for bodies list
   MotionPlanningAlgorithms algo_; // current algorithm for MP
   std::string env_name_;
   MPDController& mpd_controller_;  // controller
 	bool show_soft_parameters_;
+	boost::optional<std::pair<std::string, SoftBody> > selected_soft_body_;		// first is the name of selected soft body or empty string if none
 
 	/**
 	* Internal viewer stuff

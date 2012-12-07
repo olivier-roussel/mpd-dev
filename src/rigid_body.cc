@@ -23,8 +23,7 @@ RigidBody::RigidBody(const PolygonSoup& i_soup, double i_mass, const Eigen::Affi
 	m_geometry(i_soup),
 	m_mass(i_mass),
 	m_transform(i_tranform)
-{
-}
+	{}
 
 RigidBody::~RigidBody()
 {
