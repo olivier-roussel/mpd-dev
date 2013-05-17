@@ -29,7 +29,7 @@
 #include "gui/file_utils.h"
 #include "gui/polygon_soup_renderer.h"
 #include "gui/soft_body_renderer.h"
-#include "src/config.h"
+#include "config.h"
 #include "mpd/timer.h"
 
 static const int kMenuWidth = 250;

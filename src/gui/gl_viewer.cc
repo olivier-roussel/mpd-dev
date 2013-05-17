@@ -21,7 +21,7 @@
 #include "gui/imgui_render_gl.h"
 #include "gui/imgui.h"
 #include "gui/utils.h"
-#include "src/config.h"
+#include "config.h"
 
 #include <iostream>
 #include <boost/bind.hpp>

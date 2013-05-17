@@ -16,83 +16,101 @@
 # <http://www.gnu.org/licenses/>.
 
 # Requires at least CMake 2.6 to configure the package.
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+cmake_minimum_required(VERSION 2.6)
 
-INCLUDE(cmake/base.cmake)
-INCLUDE(cmake/boost.cmake)
-INCLUDE(cmake/cpack.cmake)
+include(cmake/base.cmake)
+include(cmake/boost.cmake)
+INCLUDE(cmake/platform.cmake)
 
-SET(CXX_DISABLE_WERROR ON) # blame OMPL 
-SET(PROJECT_NAME MPD-dev)
-SET(PROJECT_VERSION 0.1)
-SET(PROJECT_DESCRIPTION
+set(CXX_DISABLE_WERROR ON) # blame OMPL 
+set(PROJECT_NAME MPD-dev)
+set(PROJECT_VERSION 0.1)
+set(PROJECT_DESCRIPTION
   "Motion planning for deformable objects.")
-SET(PROJECT_URL "")
+set(PROJECT_URL "")
 
-SET(CUSTOM_HEADER_DIR mpd)
-SET(${PROJECT_NAME}_HEADERS
-  include/${CUSTOM_HEADER_DIR}/algorithm.h
-  include/${CUSTOM_HEADER_DIR}/bullet_engine_wrapper.h
-  include/${CUSTOM_HEADER_DIR}/bullet_utils.h
-  include/${CUSTOM_HEADER_DIR}/constants.h
-  include/${CUSTOM_HEADER_DIR}/environment.h
-  include/${CUSTOM_HEADER_DIR}/mpd_controller.h
-  include/${CUSTOM_HEADER_DIR}/physics_engine.h
-  include/${CUSTOM_HEADER_DIR}/physics_thread.h
-  include/${CUSTOM_HEADER_DIR}/polygon_soup.h
-  include/${CUSTOM_HEADER_DIR}/types.h
-)
+project(${PROJECT_NAME})
 
-SETUP_PROJECT()
+# Define & include header directory
+set(CUSTOM_HEADER_DIR mpd)
+include_directories("${CMAKE_SOURCE_DIR}/include")
 
-# Always OFF on Unix systems
-IF (WIN32)
- OPTION(MPD_DEBUG "Required if Debug build for linking with debug libs on Windows" OFF)
-ELSE (WIN32)
- SET(MPD_DEBUG OFF)
-ENDIF (WIN32)
+# Fill platform specific variables
+# We usually require that libs are stored separatly for each platforms and architectures
+# using the form lib/{PLATFORM}/${PLATFORM_ARCH} and bin/{PLATFORM}/${PLATFORM_ARCH}
+DETECT_PLATFORM()
 
+# Use cmake/ dir for user modules
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+# Define share directory
 set(SHARE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/share/mpd")
 CONFIG_FILES("src/config.h")
-#include_directories("${CMAKE_BINARY_DIR}/include")
-#include_directories("${CMAKE_BINARY_DIR}/src")
+include_directories("${CMAKE_BINARY_DIR}/src")
 
 # Dependencies
+# ----------------------------------
 
-# Use Boost
-IF (WIN32)
+# Use Boost 
+if (WIN32)
 	set(Boost_USE_STATIC_LIBS OFF)
 	set(Boost_USE_MULTITHREADED ON) 
 	set(Boost_USE_STATIC_RUNTIME OFF)
-	#add_definitions( -DBOOST_ALL_DYN_LINK )
-	find_package(Boost 1.48 COMPONENTS chrono date_time filesystem regex system thread )
+	add_definitions( -DBOOST_ALL_DYN_LINK )
+  set(BOOST_INCLUDEDIR "$ENV{BOOST_ROOT}/include")
+  set(BOOST_LIBRARYDIR "$ENV{BOOST_ROOT}/lib/${PLATFORM}/${PLATFORM_ARCH}")
+	find_package(Boost 1.48 COMPONENTS chrono date_time filesystem regex system thread REQUIRED)
 else (WIN32)
 	SEARCH_FOR_BOOST()
 endif (WIN32)
+if (Boost_FOUND)
+  include_directories("${Boost_INCLUDE_DIR}")
+  set(LIBS ${LIBS} ${Boost_LIBRARIES}) 
+else()
+  message("Could not find Boost")
+endif()
 
 # Use Eigen
-ADD_REQUIRED_DEPENDENCY("eigen3 >= 3.1.1")
+set(EIGEN3_INCLUDE_DIR $ENV{EIGEN3_INCLUDE_DIR})
+message("EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
+find_package(Eigen3 REQUIRED)
+if (EIGEN3_FOUND)
+  include_directories(${EIGEN3_INCLUDE_DIR})
+  #set(LIBS ${EIGEN3} ${EIGEN3_LIBRARY}) 
+else()
+  message("Could not find Eigen3")
+endif()
+# Set EIGEN_DONT_ALIGN definition for 32bits platforms
+if(NOT CMAKE_CL_64)
+	add_definitions(-DEIGEN_DONT_ALIGN)
+endif()
 
-# Use assimp for Collada files
-#ADD_REQUIRED_DEPENDENCY("assimp >= 2.0")
+# SDL (for GUI)
+find_package(SDL REQUIRED)
+if (SDL_FOUND)
+  include_directories(${SDL_INCLUDE_DIR})
+  set(LIBS ${LIBS} ${SDL_LIBRARY}) 
+else()
+  message("Could not find SDL")
+endif()
 
-# Use SDL for the viewer / GUI
-ADD_REQUIRED_DEPENDENCY("sdl >= 1.2.15")
-#ADD_REQUIRED_DEPENDENCY("sdl2 >= 2.0.0")
+# OpenGL (for GUI)
+find_package(OpenGL REQUIRED)
+if (OPENGL_FOUND)
+  set(LIBS ${LIBS} ${OPENGL_LIBRARIES}) 
+else()
+  message("Could not find OpenGL")
+endif()
 
-# Use Bullet as one of the physical engine
-IF (MPD_DEBUG)
-  ADD_REQUIRED_DEPENDENCY("bulletd >= 2.80")
-ELSE (MPD_DEBUG)
-  ADD_REQUIRED_DEPENDENCY("bullet >= 2.80")
-ENDIF (MPD_DEBUG)
+# Bullet
+find_package(Bullet REQUIRED)
+if (BULLET_FOUND)
+  add_definitions( -DBT_USE_DOUBLE_PRECISION ) # remove this if you use single precision bullet
+  include_directories(${BULLET_INCLUDE_DIR})
+  set(LIBS ${LIBS} ${BULLET_LIBRARIES}) 
+else()
+  message("Could not find Bullet")
+endif()
 
-# Use ompl motion planning lib
-#ADD_REQUIRED_DEPENDENCY("ompl >= 0.11.1")
-
-PKG_CONFIG_APPEND_LIBS(${PROJECT_NAME})
-
-ADD_SUBDIRECTORY(src)
-#ADD_SUBDIRECTORY(tests)
-
-SETUP_PROJECT_FINALIZE()
+add_subdirectory(src)
+#add_subdirectory(tests)
