@@ -21,6 +21,7 @@
 #define MPD_DEV_SOFT_BODY_PARAMETERS_H_
 
 #include <limits>
+#include <math.h>
 
 struct SoftBodyParameters
 {

@@ -59,22 +59,22 @@ k_VST(other.k_VST)
 
 bool SoftBodyParameters::isEqual(const SoftBodyParameters& i_other, double i_float_tolerance) const
 {
-	if (abs(k_ERP - i_other.k_ERP) > i_float_tolerance ||
-		abs(k_DP - i_other.k_DP) > i_float_tolerance ||
-		abs(k_PR - i_other.k_PR) > i_float_tolerance ||
-		abs(k_VC - i_other.k_VC) > i_float_tolerance ||
-		abs(k_DF - i_other.k_DF) > i_float_tolerance ||
-		abs(k_MT - i_other.k_MT) > i_float_tolerance ||
-		abs(k_CHR - i_other.k_CHR) > i_float_tolerance ||
-		abs(k_KHR - i_other.k_KHR) > i_float_tolerance ||
-		abs(k_SHR - i_other.k_SHR) > i_float_tolerance ||
-		abs(k_AHR - i_other.k_AHR) > i_float_tolerance ||
+	if (fabs(k_ERP - i_other.k_ERP) > i_float_tolerance ||
+		fabs(k_DP - i_other.k_DP) > i_float_tolerance ||
+		fabs(k_PR - i_other.k_PR) > i_float_tolerance ||
+		fabs(k_VC - i_other.k_VC) > i_float_tolerance ||
+		fabs(k_DF - i_other.k_DF) > i_float_tolerance ||
+		fabs(k_MT - i_other.k_MT) > i_float_tolerance ||
+		fabs(k_CHR - i_other.k_CHR) > i_float_tolerance ||
+		fabs(k_KHR - i_other.k_KHR) > i_float_tolerance ||
+		fabs(k_SHR - i_other.k_SHR) > i_float_tolerance ||
+		fabs(k_AHR - i_other.k_AHR) > i_float_tolerance ||
 		v_niters != i_other.v_niters ||
 		p_niters != i_other.p_niters ||
 		d_niters != i_other.d_niters ||
-		abs(k_LST - i_other.k_LST) > i_float_tolerance ||
-		abs(k_AST - i_other.k_AST) > i_float_tolerance ||
-		abs(k_VST - i_other.k_VST) > i_float_tolerance)
+		fabs(k_LST - i_other.k_LST) > i_float_tolerance ||
+		fabs(k_AST - i_other.k_AST) > i_float_tolerance ||
+		fabs(k_VST - i_other.k_VST) > i_float_tolerance)
 		return false;
 	else
 		return true;

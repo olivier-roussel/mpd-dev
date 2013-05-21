@@ -113,7 +113,7 @@ endif()
 # Bullet
 find_package(Bullet REQUIRED)
 if (BULLET_FOUND)
-  add_definitions( -DBT_USE_DOUBLE_PRECISION ) # remove this if you use single precision bullet
+  #add_definitions( -DBT_USE_DOUBLE_PRECISION ) # remove this if you use single precision bullet
   include_directories(${BULLET_INCLUDE_DIR})
   set(LIBS ${LIBS} ${BULLET_LIBRARIES}) 
 else()
