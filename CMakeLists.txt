@@ -18,9 +18,10 @@
 # Requires at least CMake 2.6 to configure the package.
 cmake_minimum_required(VERSION 2.6)
 
-include(cmake/base.cmake)
-include(cmake/boost.cmake)
-INCLUDE(cmake/platform.cmake)
+# include(cmake/base.cmake)
+# include(cmake/boost.cmake)
+include(cmake/portability.cmake)
+include(cmake/platform.cmake)
 
 set(CXX_DISABLE_WERROR ON) # blame OMPL 
 set(PROJECT_NAME MPD-dev)
