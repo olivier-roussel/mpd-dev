@@ -24,7 +24,7 @@
 #include <vector>
 #include <boost/filesystem/path.hpp>
 
-#include "mpd/types.h"
+#include "types.h"
 
 class PolygonSoup 
 {

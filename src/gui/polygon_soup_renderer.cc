@@ -20,6 +20,7 @@
 #include "gui/polygon_soup_renderer.h"
 
 #include "SDL.h"
+#include "GL/glew.h"
 #include "SDL_opengl.h"
 
 void drawPolygonSoup(const PolygonSoup& soup, const Eigen::Vector4d& i_base_color)

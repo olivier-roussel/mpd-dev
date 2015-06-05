@@ -20,7 +20,7 @@
 #ifndef MPD_DEV_GUI_SOFT_BODY_RENDERER_H_
 #define MPD_DEV_GUI_SOFT_BODY_RENDERER_H_
 
-#include "mpd/soft_body.h"
+#include "soft_body.h"
 
 void renderSoftBody(const SoftBody& i_body, const Eigen::Vector4d& i_faces_color, const Eigen::Vector4d& i_edges_color, const Eigen::Vector4d& i_nodes_color, 
 	bool i_render_faces, bool i_render_edges, bool i_render_nodes);

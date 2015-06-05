@@ -17,13 +17,20 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#ifndef MPD_DEV_TYPES_H_
-#define MPD_DEV_TYPES_H_
+#ifndef MPD_DEV_ENVIRONMENT_H_
+#define MPD_DEV_ENVIRONMENT_H_
 
-#include "mpd/triplet.h"
-#include <Eigen/Core>
+#include <Eigen/Geometry>
 
-//typedef boost::tuple<unsigned int, unsigned int, unsigned int> Triangle;
-typedef UniformTriplet<unsigned int> Triangle;
+#include "rigid_body.h"
+#include "types.h"
 
-#endif // MPD_DEV_TYPES_H_
+class Environment : public RigidBody
+{
+public:
+  Environment(const PolygonSoup& i_soup, const Eigen::Affine3d& i_transform);
+  virtual ~Environment();
+
+};
+
+#endif // MPD_DEV_ENVIRONMENT_H_

@@ -19,9 +19,10 @@
 
 #include "render_helpers.h"
 
+#include "GL/glew.h"
 #include "SDL_opengl.h"
 
-#include "mpd/constants.h"
+#include "constants.h"
 #include "gui/ugly_font.h"
 
 void drawCylinder(float minx, float miny, float minz, float maxx, float maxy, float maxz, const Eigen::Vector4f& color_)

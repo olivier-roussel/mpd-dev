@@ -17,9 +17,9 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#include "mpd/mpd_controller.h"
-#include "mpd/bullet_engine_wrapper.h"
-#include "mpd/constants.h"
+#include "mpd_controller.h"
+#include "bullet_engine_wrapper.h"
+#include "constants.h"
 
 MPDController::MPDController()
   :env_(NULL),

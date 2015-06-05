@@ -17,36 +17,13 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#ifndef MPD_DEV_RIGID_BODY_H_
-#define MPD_DEV_RIGID_BODY_H_
+#ifndef MPD_DEV_TYPES_H_
+#define MPD_DEV_TYPES_H_
 
-#include <Eigen/Geometry>
-#include "mpd/polygon_soup.h"
+#include "triplet.h"
+#include <Eigen/Core>
 
-class RigidBody
-{
-public:
-	RigidBody(const PolygonSoup& i_soup, double i_mass, const Eigen::Affine3d& i_tranform);
-	virtual ~RigidBody();
+//typedef boost::tuple<unsigned int, unsigned int, unsigned int> Triangle;
+typedef UniformTriplet<unsigned int> Triangle;
 
-	void switchPolygonSoupAxis();
-
-  void invertPolygonSoupTriangles();
-
-	const PolygonSoup& polygon_soup() const;
-
-	//PolygonSoup& polygon_soup_mutable();	// XXX should be in constructor instead
-
-	const Eigen::Affine3d& transform() const;
-
-	void set_transform(const Eigen::Affine3d& i_transform);
-
-	double mass() const;
-
-protected:
-	double m_mass;
-	PolygonSoup m_geometry;	
-	Eigen::Affine3d m_transform;
-};
-
-#endif // MPD_DEV_RIGID_BODY_H_
+#endif // MPD_DEV_TYPES_H_

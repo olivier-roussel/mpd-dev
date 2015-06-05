@@ -21,7 +21,7 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include "mpd/mpd_controller.h"
+#include "mpd_controller.h"
 
 #include "gui/imgui.h"
 #include "gui/render_helpers.h"
@@ -30,7 +30,7 @@
 #include "gui/polygon_soup_renderer.h"
 #include "gui/soft_body_renderer.h"
 #include "config.h"
-#include "mpd/timer.h"
+#include "timer.h"
 
 static const int kMenuWidth = 250;
 static const float kMainMenuHeightRatio = 0.75f;
@@ -373,10 +373,10 @@ void MPDViewer::handleGUI()
 				const Eigen::Vector3d& env_aabb_max = mpd_controller_.environment().polygon_soup().aabbmax();
 				set_far_clip(static_cast<float>((env_aabb_max - env_aabb_min).norm() * 0.5));
 				set_camera_pos((env_aabb_min + env_aabb_min).cast<float>()/ 2.f + Eigen::Vector3f::Identity()*far_clip());
-				set_far_clip(far_clip() * 20);
+				set_far_clip(far_clip() *500);
 				set_rot(Eigen::Vector2f(-45.f, -135.f));
 				//set_rot(Eigen::Vector2f(45.f, 45.f));
-				glFogf(GL_FOG_START, far_clip()*0.2f);
+				glFogf(GL_FOG_START, far_clip()*0.8f);
 				glFogf(GL_FOG_END, far_clip()*1.25f);
 			}else
         std::cout << "[ERROR] Could not load environment from " << env_name_ << std::endl;

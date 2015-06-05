@@ -17,7 +17,7 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#include "mpd/soft_body_parameters.h"
+#include "soft_body_parameters.h"
 
 SoftBodyParameters::SoftBodyParameters() :
 k_ERP(1.),

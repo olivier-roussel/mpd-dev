@@ -17,9 +17,9 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#include "mpd/physics_thread.h"
+#include "physics_thread.h"
 
-#include "mpd/physics_engine.h"
+#include "physics_engine.h"
 
 PhysicsThread::PhysicsThread(PhysicsEngine* i_physics_engine) : 
   is_done_(true),

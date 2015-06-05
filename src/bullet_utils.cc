@@ -17,8 +17,8 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#include "mpd/bullet_utils.h"
-#include "mpd/constants.h"
+#include "bullet_utils.h"
+#include "constants.h"
 
 btVector3 toBtVector3(const Eigen::Vector3d& i_v)
 {

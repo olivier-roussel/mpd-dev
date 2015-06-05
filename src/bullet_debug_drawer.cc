@@ -20,8 +20,8 @@
 #include "bullet_debug_drawer.h"
 
 #include "gui/mpd_viewer.h"
-#include "mpd/constants.h"
-#include "mpd/bullet_utils.h"
+#include "constants.h"
+#include "bullet_utils.h"
 
 BulletDebugDrawer::BulletDebugDrawer(MPDViewer* i_viewer):
 	viewer_(i_viewer),

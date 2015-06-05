@@ -17,8 +17,8 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#include "mpd/bullet_engine_wrapper.h"
-#include "mpd/constants.h"
+#include "bullet_engine_wrapper.h"
+#include "constants.h"
 #include "bullet_debug_drawer.h"
 #include <boost/thread/mutex.hpp>
 #include "BulletSoftBody/btSoftBodyHelpers.h"

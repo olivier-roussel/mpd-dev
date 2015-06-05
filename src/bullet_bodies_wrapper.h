@@ -20,8 +20,8 @@
 #ifndef MPD_DEV_BULLET_BODIES_WRAPPER_H_
 #define MPD_DEV_BULLET_BODIES_WRAPPER_H_
 
-#include "mpd/rigid_body.h"
-#include "mpd/soft_body.h"
+#include "rigid_body.h"
+#include "soft_body.h"
 
 #include "btBulletDynamicsCommon.h"
 

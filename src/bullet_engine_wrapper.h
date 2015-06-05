@@ -29,9 +29,9 @@
 #include "BulletSoftBody/btSoftBody.h"
 #include "BulletSoftBody/btSoftRigidDynamicsWorld.h"
 
-#include "mpd/physics_engine.h"
-#include "mpd/bullet_utils.h"
-#include "mpd/bullet_bodies_wrapper.h"
+#include "physics_engine.h"
+#include "bullet_utils.h"
+#include "bullet_bodies_wrapper.h"
 
 /**
 * Debug drawer for physics

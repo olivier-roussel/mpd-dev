@@ -21,8 +21,8 @@
 #define MPD_DEV_GUI_MPD_VIEWER_H_
 
 #include "gui/gl_viewer.h"
-#include "mpd/algorithm.h"
-#include "mpd/soft_body.h"
+#include "algorithm.h"
+#include "soft_body.h"
 #include "gui/perf_histogram.h"
 #include "gui/render_helpers.h"
 

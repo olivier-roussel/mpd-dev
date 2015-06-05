@@ -17,20 +17,36 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#ifndef MPD_DEV_ENVIRONMENT_H_
-#define MPD_DEV_ENVIRONMENT_H_
+#ifndef MPD_DEV_RIGID_BODY_H_
+#define MPD_DEV_RIGID_BODY_H_
 
 #include <Eigen/Geometry>
+#include "polygon_soup.h"
 
-#include "mpd/rigid_body.h"
-#include "mpd/types.h"
-
-class Environment : public RigidBody
+class RigidBody
 {
 public:
-  Environment(const PolygonSoup& i_soup, const Eigen::Affine3d& i_transform);
-  virtual ~Environment();
+	RigidBody(const PolygonSoup& i_soup, double i_mass, const Eigen::Affine3d& i_tranform);
+	virtual ~RigidBody();
 
+	void switchPolygonSoupAxis();
+
+  void invertPolygonSoupTriangles();
+
+	const PolygonSoup& polygon_soup() const;
+
+	//PolygonSoup& polygon_soup_mutable();	// XXX should be in constructor instead
+
+	const Eigen::Affine3d& transform() const;
+
+	void set_transform(const Eigen::Affine3d& i_transform);
+
+	double mass() const;
+
+protected:
+	double m_mass;
+	PolygonSoup m_geometry;	
+	Eigen::Affine3d m_transform;
 };
 
-#endif // MPD_DEV_ENVIRONMENT_H_
+#endif // MPD_DEV_RIGID_BODY_H_

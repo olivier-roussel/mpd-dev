@@ -22,10 +22,10 @@
 
 #include <boost/filesystem/path.hpp>
 
-#include "mpd/rigid_body.h"
-#include "mpd/environment.h"
-#include "mpd/physics_engine.h"
-#include "mpd/physics_thread.h"
+#include "rigid_body.h"
+#include "environment.h"
+#include "physics_engine.h"
+#include "physics_thread.h"
 
 class MPDViewer; // for debug drawing physics
 

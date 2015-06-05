@@ -19,6 +19,7 @@
 #include <math.h>
 #include "gui/imgui.h"
 #include "SDL.h"
+#include "GL/glew.h"
 #include "SDL_opengl.h"
 #define STBTT_malloc(x)    malloc(x)
 #define STBTT_free(x)      free(x)

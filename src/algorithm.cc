@@ -17,7 +17,7 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#include "mpd/algorithm.h"
+#include "algorithm.h"
 
 #include <vector>
 

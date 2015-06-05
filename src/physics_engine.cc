@@ -17,8 +17,8 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#include "mpd/physics_engine.h"
-#include "mpd/timer.h"
+#include "physics_engine.h"
+#include "timer.h"
 
 PhysicsEngine::PhysicsEngine()
 {

@@ -23,7 +23,7 @@
 #include <Eigen/Geometry>
 #include <boost/thread/mutex.hpp>
 
-#include "mpd/bullet_utils.h"
+#include "bullet_utils.h"
 #include "LinearMath/btIDebugDraw.h"
 
 

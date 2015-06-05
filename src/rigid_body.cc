@@ -17,7 +17,7 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#include "mpd/rigid_body.h"
+#include "rigid_body.h"
 
 RigidBody::RigidBody(const PolygonSoup& i_soup, double i_mass, const Eigen::Affine3d& i_tranform):
 	m_geometry(i_soup),

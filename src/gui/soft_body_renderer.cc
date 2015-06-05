@@ -19,6 +19,7 @@
 
 #include "gui/soft_body_renderer.h"
 
+#include "GL/glew.h"
 #include "SDL_opengl.h"
 
 void renderSoftBody(const SoftBody& i_body, const Eigen::Vector4d& i_faces_color, const Eigen::Vector4d& i_edges_color, const Eigen::Vector4d& i_nodes_color, 

@@ -17,7 +17,7 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#include "mpd/soft_body.h"
+#include "soft_body.h"
 
 SoftBody::SoftBody(const PolygonSoup& i_base_geometry, double i_total_mass, const std::vector<double>& i_nodes_masses, const Eigen::Affine3d& i_tranform):
 	m_base_geometry(i_base_geometry),

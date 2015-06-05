@@ -17,7 +17,7 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#include "mpd/environment.h"
+#include "environment.h"
 
 Environment::Environment(const PolygonSoup& i_soup, const Eigen::Affine3d& i_transform): 
 RigidBody(i_soup, 0., i_transform)

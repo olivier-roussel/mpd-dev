@@ -22,6 +22,7 @@
 
 #include <Eigen/Core>
 #include "SDL.h"
+#include "GL/glew.h"
 #include "SDL_opengl.h"
 #include <boost/thread.hpp>
 #include <boost/asio.hpp>
@@ -101,6 +102,7 @@ protected:
 	void set_render_mode(const RenderingMode_t i_rendering_mode);
 
 private:
+	SDL_Window*										window_;
 	RenderingMode_t render_mode_;	
 
   bool is_done_;                // True if viewer must quit

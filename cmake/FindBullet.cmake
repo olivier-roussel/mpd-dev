@@ -71,7 +71,7 @@ MACRO( FIND_BULLET_LIBRARY_DIRNAME LIBNAME DIRNAME )
         # message("BULLET_LIB_DIR=$ENV{BULLET_ROOT}./lib/${PLATFORM}/${PLATFORM_ARCH}")
     FIND_LIBRARY( BULLET_${LIBNAME}_LIBRARY_debug
         NAMES
-            ${LIBNAME}
+            ${LIBNAME}_Debug
         PATHS
             ${BULLET_ROOT}
             $ENV{BULLET_ROOT}

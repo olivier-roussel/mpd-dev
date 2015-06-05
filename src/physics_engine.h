@@ -24,8 +24,8 @@
 #include <Eigen/Geometry>
 #include <boost/thread.hpp>
 #include <boost/optional.hpp>
-#include "mpd/rigid_body.h"
-#include "mpd/soft_body.h"
+#include "rigid_body.h"
+#include "soft_body.h"
 
 class PolygonSoup;
 

@@ -201,20 +201,25 @@ bool GLViewer::_init()
    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
  
-   if (height_ <= 0 || width_ <= 0)
+	 window_ = SDL_CreateWindow(label_.c_str(),
+                          SDL_WINDOWPOS_UNDEFINED,
+                          SDL_WINDOWPOS_UNDEFINED,
+                          width_, height_,
+                          SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
+   if (!window_)
    {
-     const SDL_VideoInfo* vi = SDL_GetVideoInfo();
-     width_ = vi->current_w - 20;
-     height_ = vi->current_h - 80;
-   }
-   SDL_Surface* screen = SDL_SetVideoMode(width_, height_, 0, SDL_OPENGL);
-   if (!screen)
-   {
-     std::cout << "Could not initialise SDL opengl" << std::endl;
+     std::cout << "[ERROR] Could not initialise SDL opengl" << std::endl;
      return false;
    }
- 
-   SDL_WM_SetCaption(label_.c_str(), 0);
+	 SDL_GLContext glcontext = SDL_GL_CreateContext(window_);
+
+	 //Initialize GLEW
+	 glewExperimental = GL_TRUE; 
+	 GLenum glewError = glewInit();
+	 if( glewError != GLEW_OK )
+	 {
+		 std::cout << "[ERROR] Error initializing GLEW: " << glewGetErrorString( glewError ) << std::endl;
+	 }
  
    std::string font_file = std::string(kShareDir) + "/FreeMonoBold.ttf";
    if (!imguiRenderGLInit(font_file.c_str()))
@@ -248,6 +253,9 @@ void GLViewer::_processEvents()
   {
     switch(event.type)
     {
+		case SDL_MOUSEWHEEL:
+			mouse_scroll_ -= event.wheel.y;
+			break;
     case SDL_KEYDOWN:
       // Handle key press 
       if (event.key.keysym.sym == SDLK_ESCAPE)
@@ -270,11 +278,6 @@ void GLViewer::_processEvents()
         }
       }
  
-      if (event.button.button == SDL_BUTTON_WHEELUP)
-        --mouse_scroll_;
- 
-      if (event.button.button == SDL_BUTTON_WHEELDOWN)
-        ++mouse_scroll_;
       break;
     case SDL_MOUSEBUTTONUP:
       if(event.button.button == SDL_BUTTON_LEFT)
@@ -310,13 +313,13 @@ void GLViewer::_renderScene()
   last_time_ = time;
 
   // Handle keyboard movement.
-  Uint8* keystate = SDL_GetKeyState(NULL);
-  move_f_ = clamp(move_f_ + dt * 4 * (keystate[SDLK_w] ? 1 : -1), 0.0f, 1.0f);
-  move_b_ = clamp(move_b_ + dt * 4 * (keystate[SDLK_s] ? 1 : -1), 0.0f, 1.0f);
-  move_l_ = clamp(move_l_ + dt * 4 * (keystate[SDLK_a] ? 1 : -1), 0.0f, 1.0f);
-  move_r_ = clamp(move_r_ + dt * 4 * (keystate[SDLK_d] ? 1 : -1), 0.0f, 1.0f);
-  move_u_ = clamp(move_u_ + dt * 4 * (keystate[SDLK_r] ? 1 : -1), 0.0f, 1.0f);
-  move_d_ = clamp(move_d_ + dt * 4 * (keystate[SDLK_f] ? 1 : -1), 0.0f, 1.0f);
+  const Uint8* keystate = SDL_GetKeyboardState(NULL);
+  move_f_ = clamp(move_f_ + dt * 4 * (keystate[SDL_SCANCODE_W] ? 1 : -1), 0.0f, 1.0f);
+  move_b_ = clamp(move_b_ + dt * 4 * (keystate[SDL_SCANCODE_S] ? 1 : -1), 0.0f, 1.0f);
+  move_l_ = clamp(move_l_ + dt * 4 * (keystate[SDL_SCANCODE_A] ? 1 : -1), 0.0f, 1.0f);
+  move_r_ = clamp(move_r_ + dt * 4 * (keystate[SDL_SCANCODE_D] ? 1 : -1), 0.0f, 1.0f);
+  move_u_ = clamp(move_u_ + dt * 4 * (keystate[SDL_SCANCODE_R] ? 1 : -1), 0.0f, 1.0f);
+  move_d_ = clamp(move_d_ + dt * 4 * (keystate[SDL_SCANCODE_F] ? 1 : -1), 0.0f, 1.0f);
 
   // render GL
   glViewport(0, 0, width_, height_);
@@ -403,7 +406,7 @@ void GLViewer::_handleGUI()
 
   glEnable(GL_DEPTH_TEST);
   // double buffering
-  SDL_GL_SwapBuffers();
+  SDL_GL_SwapWindow(window_);
 }
 
 

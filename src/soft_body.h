@@ -21,8 +21,8 @@
 #define MPD_DEV_SOFT_BODY_H_
 
 #include <Eigen/Geometry>
-#include "mpd/polygon_soup.h"
-#include "mpd/soft_body_parameters.h"
+#include "polygon_soup.h"
+#include "soft_body_parameters.h"
 
 class SoftBody
 {

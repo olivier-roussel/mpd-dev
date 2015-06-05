@@ -19,7 +19,7 @@
 
 #include <iostream>
 #include "gui/mpd_viewer.h"
-#include "mpd/mpd_controller.h"
+#include "mpd_controller.h"
 #include "bullet_debug_drawer.h"
 
 int main(int argc, char **argv)

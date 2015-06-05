@@ -17,8 +17,8 @@
 * <http://www.gnu.org/licenses/>.
 **/
 
-#include "mpd/polygon_soup.h"
-#include "mpd/constants.h"
+#include "polygon_soup.h"
+#include "constants.h"
 
 #include <Eigen/Geometry>
 #include <boost/algorithm/string.hpp>
