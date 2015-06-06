@@ -109,6 +109,9 @@ void PhysicsEngine::doOneStep(unsigned int i_step_time_ms)
 		TimeVal start_update = getPerfTime();
 		_updateBodies();
 		update_cpu_time_us = getPerfDeltaTimeUsec(start_update, getPerfTime());
+
+		// must not releases bodies mutex between _doOneStep(), _update() and _removeInvalidatedBodies()
+		_removeInvalidatedBodies();
 	}
 
 	{
@@ -170,6 +173,25 @@ bool PhysicsEngine::addDynamicSoftBody(const std::string& i_name, SoftBody* i_so
 		return _addDynamicSoftBody(i_name, i_soft_body);
 	}else
 		return false;
+}
+
+void PhysicsEngine::_removeInvalidatedBodies()
+{
+	for (std::deque<std::string>::const_iterator it_soft_name = invalidated_soft_bodies_.begin() ; it_soft_name != invalidated_soft_bodies_.end() ; ++it_soft_name)
+	{
+		std::map<std::string, SoftBody*>::iterator it_body = soft_bodies_.find(*it_soft_name);
+		if (it_body != soft_bodies_.end())
+		{
+			delete it_body->second;
+			it_body->second = NULL;
+			soft_bodies_.erase(it_body);
+
+			// call implemented _removeSoftBody()
+			_removeSoftBody(*it_soft_name);
+			std::cout << "[WARNING] PhysicsEngine::_removeInvalidatedBodies() : Removed soft body " << *it_soft_name << std::endl;
+		}
+	}
+	invalidated_soft_bodies_.clear();
 }
 
 bool PhysicsEngine::removeSoftBody(const std::string& i_name)
@@ -234,20 +256,6 @@ const Eigen::Vector3d& PhysicsEngine::getWorldAABBmax() const
 {
 	return world_aabb_max_;
 }
-
-//const std::map<std::string, RigidBody*>& PhysicsEngine::rigid_bodies() const
-//{
-//	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
-//
-//	return rigid_bodies_;
-//}
-//
-//const std::map<std::string, SoftBody*>& PhysicsEngine::soft_bodies() const
-//{
-//	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
-//
-//	return soft_bodies_;
-//}
 
 const std::vector<std::pair<std::string, RigidBody> > PhysicsEngine::getRigidBodies() const
 {
@@ -358,4 +366,20 @@ void PhysicsEngine::setWorldAABB(const Eigen::Vector3d& i_aabb_min, const Eigen:
 
 	// call implemented _setWorldAABB()
 	_setWorldAABB(world_aabb_min_, world_aabb_max_);
+}
+
+void PhysicsEngine::applyForceOnRigidBody(const std::string& i_name, const Eigen::Vector3d& i_force)
+{
+	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+
+	// call implemented _setWorldAABB()
+	_applyForceOnRigidBody(i_name, i_force);
+}
+
+void PhysicsEngine::applyForceOnSoftBody(const std::string& i_name, const Eigen::Vector3d& i_force, int i_node_index)
+{
+	boost::lock_guard<boost::mutex> lock(bodies_mutex_);
+
+	// call implemented _setWorldAABB()
+	_applyForceOnSoftBody(i_name, i_force, i_node_index);
 }

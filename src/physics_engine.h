@@ -21,6 +21,7 @@
 #define MPD_DEV_PHYSICS_ENGINE_H_
 
 #include <map>
+#include <deque>
 #include <Eigen/Geometry>
 #include <boost/thread.hpp>
 #include <boost/optional.hpp>
@@ -82,11 +83,15 @@ public:
 
 	//void removeRigidBody(const std::string& i_name);	// TODO
 
-	void enableGravity(bool i_enable_gravity);
-
 	void enableEngineDebugDrawer(bool i_enable_drawer);
 
-	void setWorldAABB(const Eigen::Vector3d& i_aabb_min, const Eigen::Vector3d& i_aabb_max);
+	void setWorldAABB(const Eigen::Vector3d& i_aabb_min, const Eigen::Vector3d& i_aabb_max);	// TODO
+
+	void enableGravity(bool i_enable_gravity);
+
+	void applyForceOnRigidBody(const std::string& i_name, const Eigen::Vector3d& i_force);
+
+	void applyForceOnSoftBody(const std::string& i_name, const Eigen::Vector3d& i_force, int i_node_index);
 
 	/**
 	* \brief Set new parameters for given SoftBody.\n
@@ -155,6 +160,8 @@ protected:
 
 	std::map<std::string, RigidBody*> rigid_bodies_;	// owned
 	std::map<std::string, SoftBody*> soft_bodies_;		// owned
+	std::deque<std::string> invalidated_soft_bodies_;
+	//std::deque<std::string> invalidated_rigid_bodies_;	// TODO
 	mutable boost::mutex bodies_mutex_;
 
 	PerformanceTimes perf_times_;
@@ -196,12 +203,22 @@ protected:
 	*/
 	virtual bool _enableGravity(bool i_enable_gravity) = 0;
 
+	virtual void _applyForceOnRigidBody(const std::string& i_name, const Eigen::Vector3d& i_force) = 0;
+
+	virtual void _applyForceOnSoftBody(const std::string& i_name, const Eigen::Vector3d& i_force, int i_node_index) = 0;
+
 private:
 
 	/**
 	* \brief Cleanup all data of physics engine base class.
 	*/
 	void _cleanup();
+
+	/**
+	* \brief Called at the end of each step.\n
+	* Removes from simulation bodies references in invalidated_*_bodies queues.
+	*/
+	void _removeInvalidatedBodies();
 
 };
 

@@ -35,7 +35,9 @@ public:
   PhysicsThread(PhysicsEngine* i_physics_engine);
   virtual ~PhysicsThread();
   
-  void run(unsigned int i_loop_time_ms);
+	void run(unsigned int i_loop_time_ms, double i_speed_factor);
+
+	void doSteps(unsigned int i_loop_time_ms, unsigned int i_nsteps);
 
   void join();
 
@@ -53,6 +55,7 @@ protected:
    */
   bool is_done_;
 	bool is_paused_;
+	double speed_factor_;
   
   boost::thread thread_;        //  thread handle
   boost::asio::io_service io_service_;

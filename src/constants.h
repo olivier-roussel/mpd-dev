@@ -24,7 +24,7 @@
 
 static const double kPi = 3.14159265358979323846;
 
-static const unsigned int kDefaultPhysicsTimeStepMs = 20;
+static const unsigned int kDefaultPhysicsTimeStepMs = 10;
 
 static const Eigen::Vector3d kGravity(0., 0., -9.8);
 

@@ -22,6 +22,7 @@
 
 #include <Eigen/Geometry>
 #include "polygon_soup.h"
+#include "types.h"
 #include "soft_body_parameters.h"
 
 class SoftBody
@@ -49,6 +50,10 @@ public:
 
 	std::vector<Eigen::Vector3d>& nodes_normals_mutable();
 
+	const std::vector<Edge>& edges() const;
+
+	std::vector<Edge>& edges_mutable();
+
 	const SoftBodyParameters& parameters() const;
 
 	void set_parameters(const SoftBodyParameters& i_params);
@@ -71,6 +76,7 @@ protected:
 	//std::vector<Eigen::Vector3d> m_delta_nodes_position;	// nodes deformations, i.e. difference between base positions and current positions
 	std::vector<Eigen::Vector3d> m_nodes_positions;				// current nodes positions (size n)
 	std::vector<Eigen::Vector3d> m_nodes_normals;					// current nodes normals	(size n)
+	std::vector<Edge> m_edges;														// edges (for one dimensionnal bodies)
 	unsigned int m_nb_nodes;															// = n
 
 	SoftBodyParameters m_params;

@@ -19,8 +19,10 @@
 
 #include "bullet_engine_wrapper.h"
 #include "constants.h"
+#include "common_utils.h"
 #include "bullet_debug_drawer.h"
 #include <boost/thread/mutex.hpp>
+#include <deque>
 #include "BulletSoftBody/btSoftBodyHelpers.h"
 #include "BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h"
 
@@ -53,7 +55,7 @@ bool BulletEngineWrapper::_init()
 	dispatcher_= new btCollisionDispatcher(collision_config_);
 
 	//btDbvtBroadphase is a good general purpose broadphase. You can also try out btAxis3Sweep.
-	//overlapping_pair_cache_ = new bt32BitAxisSweep3(btVector3(-10., -10., -10.), btVector3(10., 10., 10.), 30000);	// world aabb will be set when environment will be
+	//overlapping_pair_cache_ = new bt32BitAxisSweep3(btVector3(-200., -200., -200.), btVector3(200., 200., 200.), 30000);	// world aabb will be set when environment will be
 	//overlapping_pair_cache_ = new bt32BitAxisSweep3(toBtVector3(world_aabb_min_), toBtVector3(world_aabb_max_), 30000);	// world aabb will be set when environment will be
 	overlapping_pair_cache_ = new btDbvtBroadphase();
 
@@ -233,32 +235,58 @@ bool BulletEngineWrapper::_addDynamicSoftBody(const std::string& i_name, SoftBod
 	const PolygonSoup& soup = i_soft_body->base_geometry();
 	btAlignedObjectArray<btVector3> verts;
 	verts.resize(nnodes);
+	btScalar* m = new btScalar[nnodes];
 	for (size_t i = 0 ; i < nnodes ; ++i)
 	{
 		const Eigen::Vector3d& v = soup.verts()[i];
 		verts[i] = toBtVector3(v);
+		m[i] = 1.;
 	}
 
-	btSoftBody* body = new btSoftBody(&world_soft_config_, nnodes, &verts[0], 0);
+	btSoftBody* body = new btSoftBody(&world_soft_config_, nnodes, &verts[0], m);
 
-	// build shape manually
+	delete [] m;
+
 	int ntris = static_cast<int>(soup.tris().size());
-	btAlignedObjectArray<bool> chks;
-	chks.resize(nnodes * nnodes, false);
-	for (size_t i = 0 ; i < ntris ; ++i)
+	const bool is_linear = ntris == 0;		// true if one dimensionnal soft body (rope)
+	// 2d - 3d soft bodies
+	if (!is_linear)
 	{
-		const Triangle& tri = soup.tris()[i];
-		for (int prevk = 2, k = 0 ; k < 3 ; prevk = k++)
+		btAlignedObjectArray<bool> chks;
+		chks.resize(nnodes * nnodes, false);
+		for (size_t i = 0 ; i < ntris ; ++i)
 		{
-			if (!chks[tri[k] * nnodes + tri[prevk]])
+			const Triangle& tri = soup.tris()[i];
+			for (int prevk = 2, k = 0 ; k < 3 ; prevk = k++)
 			{
-				chks[tri[k] * nnodes + tri[prevk]] = true;
-				chks[tri[prevk] * nnodes + tri[k]] = true;
-				body->appendLink(tri[prevk], tri[k]);
+				if (!chks[tri[k] * nnodes + tri[prevk]])
+				{
+					chks[tri[k] * nnodes + tri[prevk]] = true;
+					chks[tri[prevk] * nnodes + tri[k]] = true;
+					body->appendLink(tri[prevk], tri[k]);
+				}
 			}
+			body->appendFace(tri[0], tri[1], tri[2]);
 		}
-		body->appendFace(tri[0], tri[1], tri[2]);
+	}else{
+		// 1d soft bodies
+		int nlinks = i_soft_body->edges().size();
+		if (nlinks)
+		{
+			for (size_t i = 0 ; i < nlinks ; ++i)
+				body->appendLink(i_soft_body->edges()[i].first, i_soft_body->edges()[i].second);
+			
+		}else{
+			// soft body have no triangles and edges
+			delete body;
+			return false;
+		}
 	}
+
+	body->m_cfg.collisions = btSoftBody::fCollision::SDF_RS+
+		btSoftBody::fCollision::CL_SS + 
+		btSoftBody::fCollision::CL_SELF;
+
 	btCollisionShape* body_shape = body->getCollisionShape();
 	collision_shapes_.push_back(body_shape);
 
@@ -266,17 +294,13 @@ bool BulletEngineWrapper::_addDynamicSoftBody(const std::string& i_name, SoftBod
 	btSoftBody::Material*	material = body->appendMaterial();
 
 	body->generateBendingConstraints(2, material);
-	body->m_cfg.collisions = btSoftBody::fCollision::SDF_RS+
-		btSoftBody::fCollision::CL_SS +
-		btSoftBody::fCollision::CL_SELF;
 
 	body->randomizeConstraints();
 	body->transform(toBtTransform(Z_2_Y_Matrix * i_soft_body->transform()));
-	body->setTotalMass(i_soft_body->mass(), true);
+	body->setTotalMass(i_soft_body->mass(), !is_linear);
 	body->setPose(true, false);
 
 	body->generateClusters(16);	
-
 
 	//add the body to the dynamics world
 	dynamics_world_->addSoftBody(body);
@@ -479,12 +503,20 @@ void BulletEngineWrapper::_updateBodies()
 		{
 			for (size_t i = 0 ; i < bt_nodes.size() ; ++i)
 			{
-				nodes_pos[i] = Y_2_Z_Matrix * toEVector3(bt_nodes[i].m_x);
-				nodes_normals[i] = Y_2_Z_Matrix * toEVector3(bt_nodes[i].m_n);
+				const btSoftBody::Node& bt_node = bt_nodes[i];
+				if (isValidVector3<btVector3>(bt_node.m_x))	// true if components of vector are finite numbers
+				{
+					nodes_pos[i] = Y_2_Z_Matrix * toEVector3(bt_node.m_x);
+					nodes_normals[i] = Y_2_Z_Matrix * toEVector3(bt_node.m_n);
+				}else{
+					//std::cout << "[WARNING] BulletEngineWrapper::_updateBodies() : Soft body " << it_body->first << " has an invalid node" << std::endl;
+					invalidated_soft_bodies_.push_back(it_body->first);
+				}
 			}
 		}else
 			std::cout << "[ERROR] BulletEngineWrapper::_updateBodies() : Soft body " << it_body->first << " number of nodes differs from Bullet number of nodes" << std::endl;
 	}
+
 }
 
 void BulletEngineWrapper::_setSoftBodyParameters(const std::string& i_name, const SoftBodyParameters& i_params)
@@ -526,4 +558,25 @@ void BulletEngineWrapper::_setWorldAABB(const Eigen::Vector3d& i_aabb_min, const
 		const Eigen::Vector3d aabbmax_y = (Z_2_Y_Matrix * i_aabb_min).cwiseMin(Z_2_Y_Matrix * i_aabb_max);
 		// TODO update Bullet broadphase world AABB if required...
 	}
+}
+
+void BulletEngineWrapper::_applyForceOnRigidBody(const std::string& i_name, const Eigen::Vector3d& i_force)
+{
+	std::map<std::string, BulletRigidBody>::iterator it_body = bt_rigid_bodies_.find(i_name);
+
+	if (it_body != bt_rigid_bodies_.end())
+	{
+		//it_body->second.bt_rigid_body->applyForce(); // TODO
+	}
+}
+
+void BulletEngineWrapper::_applyForceOnSoftBody(const std::string& i_name, const Eigen::Vector3d& i_force, int i_node_index)
+{
+	std::map<std::string, BulletSoftBody>::iterator it_body = bt_soft_bodies_.find(i_name);
+
+	if (it_body != bt_soft_bodies_.end())
+	{
+		it_body->second.bt_soft_body->addForce(toBtVector3(Z_2_Y_Matrix * i_force), i_node_index);
+	}else
+		std::cout << "[ERROR] BulletEngineWrapper::_applyForceOnSoftBody() : Soft body " << i_name << " not associated with Bullet engine" << std::endl;
 }

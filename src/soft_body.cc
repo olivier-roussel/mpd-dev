@@ -98,6 +98,16 @@ void SoftBody::set_parameters(const SoftBodyParameters& i_params)
 	m_params = i_params;
 }
 
+const std::vector<Edge>& SoftBody::edges() const
+{
+	return m_edges;
+}
+
+std::vector<Edge>& SoftBody::edges_mutable()
+{
+	return m_edges;
+}
+
 // unused so far
 //const std::vector<Eigen::Vector3d>& SoftBody::delta_nodes_position() const
 //{

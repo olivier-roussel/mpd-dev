@@ -19,7 +19,6 @@
 
 #include "gui/soft_body_renderer.h"
 
-#include "GL/glew.h"
 #include "SDL_opengl.h"
 
 void renderSoftBody(const SoftBody& i_body, const Eigen::Vector4d& i_faces_color, const Eigen::Vector4d& i_edges_color, const Eigen::Vector4d& i_nodes_color, 
@@ -29,6 +28,7 @@ void renderSoftBody(const SoftBody& i_body, const Eigen::Vector4d& i_faces_color
 	const unsigned int nnodes = i_body.nb_nodes();
 	const std::vector<Eigen::Vector3d>& nodes_pos = i_body.nodes_positions();
 	const std::vector<Eigen::Vector3d>& nodes_normals = i_body.nodes_normals();
+	const std::vector<Edge>& edges = i_body.edges();
 	
 	if (i_render_faces)
 	{
@@ -64,13 +64,16 @@ void renderSoftBody(const SoftBody& i_body, const Eigen::Vector4d& i_faces_color
 	}
 	if (i_render_edges)
 	{
-		// TODO
-		//glBegin(GL_LINES);
-		//for (size_t i = 0 ; i < i_coloured_line_array.size() ; ++i)
-		//{
-
-		//}
-		//glEnd();
+		glBegin(GL_LINES);
+		glLineWidth(3.f);
+		glColor4dv(i_edges_color.data());
+		for (size_t i = 0 ; i < edges.size() ; ++i)
+		{
+			const Edge& e = edges[i];
+			glVertex3dv(nodes_pos[e.first].data());
+			glVertex3dv(nodes_pos[e.second].data());
+		}
+		glEnd();
 	}
 	if (i_render_nodes)
 	{

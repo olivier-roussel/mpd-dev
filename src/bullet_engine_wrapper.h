@@ -70,6 +70,10 @@ protected:
 
 	bool _enableGravity(bool i_enable_gravity);
 
+	void _applyForceOnRigidBody(const std::string& i_name, const Eigen::Vector3d& i_force);
+
+	void _applyForceOnSoftBody(const std::string& i_name, const Eigen::Vector3d& i_force, int i_node_index);
+
   void _doOneStep(unsigned int i_step_time_ms);
 
 	void _updateBodies();
@@ -84,7 +88,8 @@ private:
   //std::vector<std::pair<btCollisionShape*, int> > collision_shapes_;	// second is number of btCollisionObjects that uses this shape (for memory management)
   btDefaultCollisionConfiguration* collision_config_;
   btCollisionDispatcher* dispatcher_;
-  btDbvtBroadphase* overlapping_pair_cache_;
+  //bt32BitAxisSweep3* overlapping_pair_cache_;
+	btDbvtBroadphase* overlapping_pair_cache_;
   btSequentialImpulseConstraintSolver* solver_; // TODO try others solvers
   btSoftRigidDynamicsWorld* dynamics_world_;
 	btSoftBodyWorldInfo	world_soft_config_;

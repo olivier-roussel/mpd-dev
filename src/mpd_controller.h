@@ -70,6 +70,10 @@ public:
 	*/
 	void addSoftBox(const std::string& i_name, double i_mass, const Eigen::Affine3d& i_transform);
 
+	void addSoftRope(const std::string& i_name, double i_mass, int i_nnodes, double i_len, const Eigen::Affine3d& i_transform);
+
+	void runRopeExperiment(double i_mass, int i_nnodes);
+
 	/**
 	*
 	* \pre Physics must have been initialized.

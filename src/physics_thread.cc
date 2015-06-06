@@ -28,7 +28,8 @@ PhysicsThread::PhysicsThread(PhysicsEngine* i_physics_engine) :
   loop_time_ms_(0),
   thread_(),
   timer_(io_service_),
-  io_service_()
+  io_service_(),
+	speed_factor_(1.)
 {
   assert(physics_engine_ != NULL && "physics thread initialized with NULL physics engine");
 }
@@ -38,12 +39,21 @@ PhysicsThread::~PhysicsThread()
   // no op
 }
 
-void PhysicsThread::run(unsigned int i_loop_time_ms)
+void PhysicsThread::run(unsigned int i_loop_time_ms, double i_speed_factor)
 {
   is_done_ = false;
 	is_paused_ = false;
   loop_time_ms_ = i_loop_time_ms;
+	speed_factor_ = i_speed_factor;
   thread_ = boost::thread(&PhysicsThread::_run, this);
+}
+
+void PhysicsThread::doSteps(unsigned int i_loop_time_ms, unsigned int i_nsteps)
+{
+	timer_.cancel();
+
+	for (unsigned int i = 0 ; i < i_nsteps ; ++i)
+		physics_engine_->doOneStep(static_cast<double>(i_loop_time_ms));
 }
 
 void PhysicsThread::join()
@@ -71,8 +81,9 @@ void PhysicsThread::set_is_paused(bool i_is_paused)
 	is_paused_ = i_is_paused;
 	if (!is_paused_)
 	{
-		timer_.expires_at(timer_.expires_at() + boost::posix_time::milliseconds(loop_time_ms_));
-		timer_.async_wait(boost::bind(&PhysicsThread::_update, this));
+		_update();
+	}else{
+		timer_.cancel();
 	}
 }
 
@@ -108,4 +119,5 @@ void PhysicsThread::_update()
 void PhysicsThread::_quit()
 {
   // no op
+	timer_.cancel();
 }

@@ -26,4 +26,6 @@
 //typedef boost::tuple<unsigned int, unsigned int, unsigned int> Triangle;
 typedef UniformTriplet<unsigned int> Triangle;
 
+typedef std::pair<unsigned int, unsigned int> Edge;
+
 #endif // MPD_DEV_TYPES_H_

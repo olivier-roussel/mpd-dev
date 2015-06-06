@@ -21,6 +21,23 @@
 #ifndef MPD_DEV_COMMON_UTILS_H_
 #define MPD_DEV_COMMON_UTILS_H_
 
+#include <boost\math\special_functions\fpclassify.hpp>
+
+#define STATIC_ASSERT( x ) typedef char __STATIC_ASSERT__[( x )?1:-1]
+
+/**
+* \brief Returns true if all 3 vector elements are finite numbers.
+* \pre Vector type T must have operator[] defined to acces to its 3
+* elements as T[0], T[1] and T[2]
+*/
+template<class T>
+bool isValidVector3(const T& i_vec)
+{
+	return boost::math::isfinite(i_vec[0]) && 
+		boost::math::isfinite(i_vec[1]) &&
+		boost::math::isfinite(i_vec[2]);
+}
+
 #define DEFINE_SIMPLE_ENUM(EnumName, seq) \
 struct EnumName {\
    enum type \
